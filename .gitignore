@@ -1,0 +1,6 @@
+
+# Editor files
+*~
+
+env/
+__pycache__/
