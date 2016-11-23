@@ -2,5 +2,8 @@
 # Editor files
 *~
 
+# This is the db file we use for debugging
+inpassing/db.sqlite3
+
 env/
 __pycache__/
