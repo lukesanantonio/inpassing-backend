@@ -3,4 +3,5 @@
 
 from .app import app
 from .models import db
-from . import views
+
+from . import models, views
