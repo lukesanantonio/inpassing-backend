@@ -5,5 +5,8 @@
 # This is the db file we use for debugging
 inpassing/db.sqlite3
 
+# Our instance folder contains local deployment stuff
+instance/
+
 env/
 __pycache__/
