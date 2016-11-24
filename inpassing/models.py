@@ -111,6 +111,21 @@ class Pass(db.Model):
     # A pass has a given history of borrows and returns, etc.
     borrow_log = db.relationship('BorrowLogEntry', lazy='dynamic')
 
+# A user must request a pass state and ID from a moderator of an org
+class RequestLog(db.Model):
+    __tablename__ = 'requestlog'
+
+    entry_id     = db.Column(db.Integer, primary_key=True)
+    org_id       = db.Column(db.Integer, db.ForeignKey('orgs.id'))
+    requestor_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    request_time = db.Column(db.DateTime)
+
+    state_id = db.Column(db.Integer, db.ForeignKey('daystates.id'))
+    spot_num = db.Column(db.Integer)
+
+    assigned_pass_id = db.Column(db.Boolean)
+    assignment_time =  db.Column(db.DateTime)
+
 # Borrows record the time and to whom a pass was lent to. This will mainly be
 # used to prevent some people from getting the pass all the time. The answer to
 # the question "who's allowed to park with this pass *now*?" can be found in the
