@@ -4,7 +4,6 @@
 from flask import request, jsonify
 from .app import app
 from .models import Org, User
-from .config import SECRET_KEY
 
 import bcrypt
 

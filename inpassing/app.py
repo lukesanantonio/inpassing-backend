@@ -4,14 +4,15 @@
 import os
 from flask import Flask
 
-app = Flask(__name__)
+app = Flask(__name__, instance_relative_config=True)
 
-# Load the config
-from . import config
+from . import default_config
+app.config.from_object(default_config)
 
-# Configure the app
-app.config.from_object(config)
+# Look for config.py in a given instance folder
+app.config.from_pyfile('config.py', silent=True)
 
-# Override config, use for production or private debug.
-if 'IN_PASSING_CONFIG' in os.environ:
-    app.config.from_envvar('IN_PASSING_CONFIG')
+# As a last ditch effort, check the file given by the environment variable. It
+# could be used in place of config.py to point to alternative configuration
+# files (production and debug, for example).
+app.config.from_envvar('INPASSING_CONFIG', silent=True)
