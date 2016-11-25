@@ -49,11 +49,9 @@ def me():
         'last_name': user.last_name,
         'email': user.email,
         'participates': [ {'id': org.id, 'name': org.name}
-                          for org in user.participates
-        ],
+                          for org in user.participates ],
         'moderates': [ {'id': org.id, 'name': org.name}
-                       for org in user.moderates
-        ],
+                       for org in user.moderates ],
         'passes': pass_util.get_user_passes(user_id)
 
     }), 200
