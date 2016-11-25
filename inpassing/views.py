@@ -56,6 +56,45 @@ def me():
 
     }), 200
 
+@app.route('/me/request_pass')
+@jwt_required
+def me_request_pass():
+    user_id = get_jwt_identity()
+
+    org_id = request.args.get('org_id')
+    state_id = request.args.get('state_id')
+    spot_num = request.args.get('spot_num')
+
+    err = None
+    if org_id == None:
+        err = {
+            'msg': 'missing org_id'
+        }
+    elif state_id == None:
+        err = {
+            'msg': 'missing state_id'
+        }
+    elif spot_num == None:
+        err = {
+            'msg': 'missing spot_num'
+        }
+
+    if err != None:
+        return jsonify(err), 422
+
+    # Create a new request in the request log
+    req = PassRequest(org_id = org_id,
+                      requestor_id = user_id,
+                      state_id = state_id,
+                      spot_num = spot_num)
+
+    db.session.add(req)
+    db.session.commit()
+
+    return jsonify({
+        'request_id': req.id
+    }), 200
+
 @app.route('/orgs/<org_id>')
 @jwt_required
 def org_get(org_id):
