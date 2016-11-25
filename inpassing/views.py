@@ -3,7 +3,7 @@
 
 from flask import request, jsonify
 from .app import app
-from .models import Org, User
+from .models import Org, User, db
 
 import bcrypt
 
@@ -22,7 +22,7 @@ def auth_user():
     in_email = request.form.get('email', '')
     in_passwd = request.form.get('password', '')
 
-    user = User.query.filter_by(email=in_email).first()
+    user = db.session.query(User).filter_by(email=in_email).first()
 
     if user and bcrypt.checkpw(in_passwd.encode('ascii'), user.password):
         # Authenticated, return a JWT
@@ -39,7 +39,7 @@ def auth_user():
 def user_me():
     # Get user information from the id in the identity
     user_id = get_jwt_identity()
-    user = User.query.filter_by(id=user_id).first()
+    user = db.session.query(User).filter_by(id=user_id).first()
 
     return jsonify({
         'id': user_id,
@@ -63,7 +63,7 @@ def org_get(org_id):
     cur_user_id = get_jwt_identity()
 
     # Find the org by id
-    org = Org.query.filter_by(id=org_id).first()
+    org = db.session.query(Org).filter_by(id=org_id).first()
 
     if org is None:
         return jsonify({
