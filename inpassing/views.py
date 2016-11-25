@@ -2,6 +2,8 @@
 # All rights reserved.
 
 from flask import request, jsonify
+
+from . import pass_util
 from .app import app
 from .models import Org, User, db
 
@@ -52,9 +54,8 @@ def user_me():
         'moderates': [ {'id': org.id, 'name': org.name}
                        for org in user.moderates
         ],
-        'passes': [ {'id': ps.id, 'name': ps.name}
-                    for ps in user.passes
-        ]
+        'passes': pass_util.get_user_passes(user_id)
+
     }), 200
 
 @app.route('/orgs/<org_id>')
