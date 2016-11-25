@@ -113,6 +113,9 @@ class Pass(db.Model):
     # A pass has a given history of borrows and returns, etc.
     borrow_log = db.relationship('BorrowLogEntry', lazy='dynamic')
 
+    org = db.relationship('Org')
+    state = db.relationship('DayState')
+
 # A user must request a pass state and ID from a moderator of an org
 class RequestLog(db.Model):
     __tablename__ = 'requestlog'
