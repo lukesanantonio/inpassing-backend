@@ -36,9 +36,9 @@ def auth_user():
         # Authentication error
         return jsonify({'msg': 'bad user credentials'}), 401
 
-@app.route('/users/me')
+@app.route('/me')
 @jwt_required
-def user_me():
+def me():
     # Get user information from the id in the identity
     user_id = get_jwt_identity()
     user = db.session.query(User).filter_by(id=user_id).first()
