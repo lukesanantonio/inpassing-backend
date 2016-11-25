@@ -4,6 +4,7 @@
 import getpass
 import bcrypt
 import inpassing
+from inpassing.models import db, Org, User, Pass, RequestLog, BorrowLogEntry
 
 from flask_script import Manager
 
@@ -45,9 +46,7 @@ def create_user():
 
         is_correct = is_yes(input('Is this correct? '))
 
-    new_user = inpassing.models.User(first_name=first_name,
-                                     last_name=last_name,
-                                     email=email)
+    new_user = User(first_name=first_name, last_name=last_name, email=email)
     new_user.password = bcrypt.hashpw(password.encode('ascii'),
                                       bcrypt.gensalt())
 
@@ -66,9 +65,9 @@ def create_org():
         name = parse_field('Name [{}]: ', name)
         is_correct = is_yes(input('Is this correct? '))
 
-    new_org = inpassing.models.Org(name=name)
-    inpassing.db.session.add(new_org)
-    inpassing.db.session.commit()
+    new_org = Org(name=name)
+    db.session.add(new_org)
+    db.session.commit()
 
     print('Added org {} ({})'.format(new_org.id, new_org.name))
 
