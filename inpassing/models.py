@@ -123,10 +123,10 @@ class Pass(db.Model):
     state = db.relationship('DayState')
 
 # A user must request a pass state and ID from a moderator of an org
-class RequestLog(db.Model):
+class PassRequest(db.Model):
     __tablename__ = 'requestlog'
 
-    entry_id     = db.Column(db.Integer, primary_key=True)
+    id     = db.Column(db.Integer, primary_key=True)
     org_id       = db.Column(db.Integer, db.ForeignKey('orgs.id'))
     requestor_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     request_time = db.Column(db.DateTime, default=func.now())

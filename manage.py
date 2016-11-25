@@ -6,7 +6,7 @@ import bcrypt
 import datetime
 
 import inpassing
-from inpassing.models import db, Org, User, Pass, RequestLog, BorrowLogEntry
+from inpassing.models import db, Org, User, Pass, PassRequest, BorrowLogEntry
 
 from flask_script import Manager
 
@@ -113,8 +113,8 @@ def verify_pass():
     print('You picked {}'.format(org.name))
 
     # This finds all the un verified passes for this org
-    reqs = db.session.query(RequestLog).filter(
-        and_(RequestLog.org_id == org.id, RequestLog.assigned_pass_id == None)
+    reqs = db.session.query(PassRequest).filter(
+        and_(PassRequest.org_id == org.id, PassRequest.assigned_pass_id == None)
     ).all()
 
     if len(reqs) == 0:
