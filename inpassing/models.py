@@ -104,9 +104,15 @@ class Pass(db.Model):
     __tablename__ = 'passes'
 
     id = db.Column(db.Integer, primary_key=True)
+
+    # This stuff should match the values in the original pass request.
     org_id = db.Column(db.Integer, db.ForeignKey('orgs.id'))
     owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+    # Current user of the pass if borrowed. Null if owner is using it.
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+    # These may be different from the values requested in PassRequest
     state_id = db.Column(db.Integer, db.ForeignKey('daystates.id'))
     spot_num = db.Column(db.Integer)
 
