@@ -2,6 +2,8 @@
 # All rights reserved.
 
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.sql import func
+
 from .app import app
 
 db = SQLAlchemy(app)
@@ -118,13 +120,17 @@ class RequestLog(db.Model):
     entry_id     = db.Column(db.Integer, primary_key=True)
     org_id       = db.Column(db.Integer, db.ForeignKey('orgs.id'))
     requestor_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    request_time = db.Column(db.DateTime)
+    request_time = db.Column(db.DateTime, default=func.now())
 
     state_id = db.Column(db.Integer, db.ForeignKey('daystates.id'))
     spot_num = db.Column(db.Integer)
 
-    assigned_pass_id = db.Column(db.Boolean)
+    assigned_pass_id = db.Column(db.Integer, db.ForeignKey('passes.id'))
     assignment_time =  db.Column(db.DateTime)
+
+    org = db.relationship('Org')
+    requestor = db.relationship('User')
+    assigned_pass = db.relationship('Pass')
 
 # Borrows record the time and to whom a pass was lent to. This will mainly be
 # used to prevent some people from getting the pass all the time. The answer to
