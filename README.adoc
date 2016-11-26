@@ -1,0 +1,53 @@
+= Inpassing Web Service
+Luke San Antonio Bialecki <lukesanantonio@gmail.com>
+
+= Data model
+
+_See inpassing/models.py for all the details._
+
+== Org
+Orgs have parking spaces and give out passes to users. Each org has a set of
+states and some amount of parking spaces.
+
+== User
+Users can moderate an org or participate in an org.
+
+== Pass
+Passes are defined by a state and a spot number. The state could be 'A', 'B' for
+A-B parking or 'M', 'T', 'W', etc for schedules that work on a weekly basis.
+Passes don't exist until they are claimed by a user and verified by an org.
+Passes are requested through the requestlog table, which stores the user who is
+making the request, along with the *requested* state and spot. The Org may
+decide to assign the user to a different spot, however.
+
+== DayState
+Right now it's basically a string that users of the service will recognize, IE
+'A' or 'B' or 'Monday' or 'Tuesday', etc. It is referenced by its unique ID.
+
+
+= API
+
+|===
+| Endpoint | Description | Authentication | Parameters / Form
+| `POST /auth/user.jwt`
+| Authenticates the user. Return a user auth token to be used header like
+  `Authorization: Bearer <token>`
+| None
+| Form data: `email`, `password`
+| `GET /me`
+| Returns JSON object of user information based on login token. Includes id,
+  first_name, last_name, email, orgs that this user participates in, orgs that
+  this user moderates in, and all types of passes: pending, owned, and lent.
+| User auth token
+| None
+| `POST /me/pass_request`
+| Requests a pass on behalf of the user. Returns the new request ID.
+| User auth token
+| Form data: `org_id`, `state_id`, `spot_num`.
+| `GET /orgs/<org_id>`
+| Returns a JSON object describing the org. If the current user (given an auth
+  token) is not a participant or mod of the org, only the name is provided.
+  Otherwise the greeting and rules are provided as well.
+| User auth token
+| URL: `org_id`
+|===
