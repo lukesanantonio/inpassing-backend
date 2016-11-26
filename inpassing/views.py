@@ -95,6 +95,12 @@ def me_request_pass():
         'request_id': req.id
     }), 200
 
+# Idea?
+# @app.route('/me/pending_passes') *or*
+# @app.route('/me/pending_requests') *and*
+# @app.route('/me/owned_passes') *and*
+# @app.route('/me/using_passes')
+
 @app.route('/orgs/<org_id>')
 @jwt_required
 def org_get(org_id):
