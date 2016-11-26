@@ -56,14 +56,14 @@ def me():
 
     }), 200
 
-@app.route('/me/request_pass')
+@app.route('/me/pass_request', methods=['POST'])
 @jwt_required
 def me_request_pass():
     user_id = get_jwt_identity()
 
-    org_id = request.args.get('org_id')
-    state_id = request.args.get('state_id')
-    spot_num = request.args.get('spot_num')
+    org_id = request.form.get('org_id')
+    state_id = request.form.get('state_id')
+    spot_num = request.form.get('spot_num')
 
     err = None
     if org_id == None:
