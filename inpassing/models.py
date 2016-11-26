@@ -109,7 +109,8 @@ class Pass(db.Model):
     org_id = db.Column(db.Integer, db.ForeignKey('orgs.id'))
     owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
-    # Current user of the pass if borrowed. Null if owner is using it.
+    # Current user of the pass. This should be equal to owner_id when the owner
+    # needs it and null if it can be lent.
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
     # These may be different from the values requested in PassRequest

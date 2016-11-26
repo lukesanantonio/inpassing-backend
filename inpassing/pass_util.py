@@ -18,9 +18,8 @@ def get_user_passes(user_id):
              PassRequest.assigned_pass_id != None)
     ).all()
 
-    # Borrowed passes are ones that are not owned by the user and being
-    # currently used. I'm not sure if Pass.owner_id will ever equal Pass.user_id
-    # so we use this and to keep it safe.
+    # Borrowed passes are ones that are not owned by this user but are currently
+    # being used / borrowed.
     borrowed_passes = db.session.query(Pass).filter(
         and_(Pass.owner_id != user_id,
              Pass.user_id == user_id)
