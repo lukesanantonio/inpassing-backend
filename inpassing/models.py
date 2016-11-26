@@ -148,7 +148,7 @@ class PassRequest(db.Model):
 class BorrowLogEntry(db.Model):
     __tablename__ = 'borrowlog'
 
-    entry_id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     # This is the owner of the pass as of the borrow occurring, it may not
     # reflect the current value of the passes owner.
     owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
