@@ -64,22 +64,26 @@ def distribute_passes(users):
     = Proposed algorithm
     1. For each user, weight the time since their last borrow and how many
     borrows overall to form their score.
-    2. Sort users by score
-    3. Give pass to top user.
+    2. Sort users by score.
+    3. Give pass to the user with the highest score.
+    4. ???
+    5. Profit
 
     = Stupid Ideas
 
     1. First come, first serve.
-    2. Distribute a pass to a random seeking individual at a random time after
+    2. Distribute a pass to a random (seeking) individual at a random time after
     the pass goes up for grabs.
-    3. Give Luke the pass. Always.
+    3. Give Luke the pass. *Always*.
 
     = Smart Ideas
 
     $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-    $ 1. Pay to for each pass. Price scales with the score detailed above. $
+    $ 1. Users pay for each pass where price scales with the score         $
+    $ detailed above.                                                      $
     $ 2. Have users play that gambling game where you drop a ball on pegs  $
     $ and it randomly goes left or right until the bottom. The ball in the $
     $ center hole gets the pass. Each ball costs the user one ad viewing.  $
     $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
     """
