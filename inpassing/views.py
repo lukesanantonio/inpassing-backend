@@ -7,6 +7,9 @@ from . import pass_util
 from .app import app
 from .models import Org, User, db
 
+from .utils import jwt_optional
+
+import json
 import bcrypt
 
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token,\
@@ -102,10 +105,8 @@ def me_request_pass():
 # @app.route('/me/using_passes')
 
 @app.route('/orgs/<org_id>')
-@jwt_required
+@jwt_optional
 def org_get(org_id):
-    cur_user_id = get_jwt_identity()
-
     # Find the org by id
     org = db.session.query(Org).filter_by(id=org_id).first()
 
@@ -120,10 +121,21 @@ def org_get(org_id):
         'name': org.name
     }
 
-    if cur_user_id in org.mods or cur_user_id in org.participants:
-        ret.update({
-            'day_state_greeting_fmt': org.day_state_greeting_fmt,
-            'parking_rules': json.loads(org.parking_rules),
-        })
+    # See if we are being accessed by a user who participates or moderates this
+    # organization. We could technically store this information in the access
+    # token, but its more straightforward if we just do it this way.
+    user = db.session.query(User).filter_by(id=get_jwt_identity()).first()
+
+    if user:
+        if org in user.participates:
+            if org in user.moderates:
+                # We don't have any more information to give out to moderators.
+                pass
+
+            # The user will need this.
+            ret.update({
+                'day_state_greeting_fmt': org.day_state_greeting_fmt or '',
+                'parking_rules': json.loads(org.parking_rules or '{}'),
+            })
 
     return jsonify(ret), 200
