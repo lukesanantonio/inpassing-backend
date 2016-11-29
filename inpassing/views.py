@@ -22,6 +22,7 @@ def user_identity(ident):
     # The user is identified with their ID.
     return ident.id
 
+# Idea: Add anonymous auth @ GET /auth/anon.jwt or something
 @app.route('/auth/user.jwt', methods=['POST'])
 def auth_user():
     in_email = request.form.get('email', '')
