@@ -140,3 +140,14 @@ def org_get(org_id):
             })
 
     return jsonify(ret), 200
+
+@app.route('/orgs/search')
+def org_search():
+    query = request.args.get('q')
+    if query == None:
+        return jsonify({
+            'msg': 'no query string'
+        }), 422
+
+    orgs = db.session.query(Org).filter(Org.name.like('%' + query + '%')).all()
+    return jsonify([{'id': org.id, 'name': org.name } for org in orgs]), 200
