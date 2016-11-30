@@ -6,7 +6,7 @@ import bcrypt
 import datetime
 
 import inpassing
-from inpassing.models import db, Org, User, Pass, PassRequest, BorrowLogEntry
+from inpassing.models import db, Org, User, Pass
 
 from flask_script import Manager
 
@@ -113,9 +113,13 @@ def verify_pass():
     print('You picked {}'.format(org.name))
 
     # This finds all the un verified passes for this org
-    reqs = db.session.query(PassRequest).filter(
-        and_(PassRequest.org_id == org.id, PassRequest.assigned_pass_id == None)
-    ).all()
+    # reqs = db.session.query(PassRequest).filter(
+    #     and_(PassRequest.org_id == org.id, PassRequest.assigned_pass_id == None)
+    # ).all()
+
+    # For now, we don't know how to query passes that need to be verified by an
+    # org.
+    reqs = []
 
     if len(reqs) == 0:
         print('No pass requests need to be verified')

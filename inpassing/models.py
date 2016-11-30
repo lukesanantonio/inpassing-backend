@@ -109,56 +109,44 @@ class Pass(db.Model):
     org_id = db.Column(db.Integer, db.ForeignKey('orgs.id'))
     owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
+    # This is what was requested from the user
+    requested_state_id = db.Column(db.Integer, db.ForeignKey('daystates.id'))
+    requested_spot_num = db.Column(db.Integer)
+
+    request_time = db.Column(db.DateTime)
+
+    # This is the spot they were assigned
+    assigned_state_id = db.Column(db.Integer, db.ForeignKey('daystates.id'))
+    assigned_spot_num = db.Column(db.Integer)
+
+    assigned_time = db.Column(db.DateTime)
+
     # Current user of the pass. This should be equal to owner_id when the owner
     # needs it and null if it can be lent.
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
-    # These may be different from the values requested in PassRequest
-    state_id = db.Column(db.Integer, db.ForeignKey('daystates.id'))
-    spot_num = db.Column(db.Integer)
+    # A pass has a history of borrows and returns, etc.
+    borrow_log = db.relationship('Borrow', lazy='dynamic')
 
-    # A pass has a given history of borrows and returns, etc.
-    borrow_log = db.relationship('BorrowLogEntry', lazy='dynamic')
-
-    org = db.relationship('Org')
-    state = db.relationship('DayState')
-
-# A user must request a pass state and ID from a moderator of an org
-class PassRequest(db.Model):
-    __tablename__ = 'requestlog'
-
-    id     = db.Column(db.Integer, primary_key=True)
-    org_id       = db.Column(db.Integer, db.ForeignKey('orgs.id'))
-    requestor_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    request_time = db.Column(db.DateTime, default=func.now())
-
-    state_id = db.Column(db.Integer, db.ForeignKey('daystates.id'))
-    spot_num = db.Column(db.Integer)
-
-    assigned_pass_id = db.Column(db.Integer, db.ForeignKey('passes.id'))
-    assignment_time =  db.Column(db.DateTime)
-
-    org = db.relationship('Org')
-    requestor = db.relationship('User')
-    assigned_pass = db.relationship('Pass')
-
-# Borrows record the time and to whom a pass was lent to. This will mainly be
-# used to prevent some people from getting the pass all the time. The answer to
-# the question "who's allowed to park with this pass *now*?" can be found in the
-# Pass table.
-class BorrowLogEntry(db.Model):
-    __tablename__ = 'borrowlog'
+# The transfer log records the time and to whom a pass was lent to. This will
+# mainly be used for logging purposes.
+class Transfer(db.Model):
+    __tablename__ = 'transferlog'
 
     id = db.Column(db.Integer, primary_key=True)
-    # This is the owner of the pass as of the borrow occurring, it may not
-    # reflect the current value of the passes owner.
-    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
-    # We need the pass to
+    # The pass in question. The owner is the only one who should be able to lend
+    # it, even if someone else is using it. Just a reminder ;)
     pass_id = db.Column(db.Integer, db.ForeignKey('passes.id'))
 
-    # Who it was lent to and when. If this is null we are reseting the lentee.
-    lent_to = db.Column(db.Integer, db.ForeignKey('users.id'))
+    # The time that the pass was made available for transfer.
+    time_requested = db.Column(db.DateTime)
 
-    # The time at which this entry was made.
+    taken_from = db.Column(db.Integer, db.ForeignKey('users.id'))
+    given_to = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+    # The time at which the pass was transfered.
     time_lent = db.Column(db.DateTime)
+
+    # When will it go back to the original person?
+    time_expires = db.Column(db.DateTime)

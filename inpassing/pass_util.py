@@ -2,7 +2,7 @@
 # All rights reserved.
 
 from sqlalchemy.sql import and_, or_
-from .models import Pass, PassRequest, db
+from .models import Pass, db
 
 def get_user_passes(user_id):
     """Returns all owned, borrowed and requested passes of a user."""
