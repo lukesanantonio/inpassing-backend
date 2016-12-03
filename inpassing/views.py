@@ -22,6 +22,50 @@ def user_identity(ident):
     # The user is identified with their ID.
     return ident.id
 
+@app.route('/user/signup', methods=['POST'])
+def user_signup():
+    first_name = request.form.get('first_name')
+    last_name = request.form.get('last_name')
+    email = request.form.get('email')
+    password = request.form.get('password')
+
+    err = None
+    if first_name is None:
+        err = {
+            'field_missing': 'first_name',
+            'msg': 'first name is a required field'
+        }
+    elif last_name is None:
+        err = {
+            'field_missing': 'last_name',
+            'msg': 'last name is a required field'
+        }
+    elif email is None:
+        err = {
+            'field_missing': 'email',
+            'msg': 'email is a required field'
+        }
+    elif password is None:
+        err = {
+            'field_missing': 'password',
+            'msg': 'password is a required field'
+        }
+
+    if err != None:
+        return jsonify(err), 422
+
+    # Hash password, add user, return response.
+    hashpass = bcrypt.hashpw(password, bcrypt.gensalt(12))
+    user = User(first_name=first_name, last_name=last_name, email=email,
+                password=hashpass)
+    db.session.add(user)
+    db.session.commit()
+
+    return jsonify({
+        'user_id': user.id,
+        'msg': 'successfully created new user'
+    }), 200
+
 # Idea: Add anonymous auth @ GET /auth/anon.jwt or something
 @app.route('/auth/user.jwt', methods=['POST'])
 def auth_user():
