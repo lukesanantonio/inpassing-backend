@@ -121,13 +121,6 @@ class Pass(db.Model):
 
     assigned_time = db.Column(db.DateTime)
 
-    # Current user of the pass. This should be equal to owner_id when the owner
-    # needs it and null if it can be lent.
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-
-    # A pass has a history of borrows and returns, etc.
-    borrow_log = db.relationship('Borrow', lazy='dynamic')
-
 # The transfer log records the time and to whom a pass was lent to. This will
 # mainly be used for logging purposes.
 class Transfer(db.Model):

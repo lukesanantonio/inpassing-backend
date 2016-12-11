@@ -9,7 +9,7 @@ def get_user_passes(user_id):
 
     # This includes all assigned (verified) passes and pass requests.
     passes = db.session.query(Pass).filter(
-        or_(Pass.owner_id == user_id, Pass.user_id == user_id)
+        or_(Pass.owner_id == user_id)
     ).all()
 
     ret = []
@@ -18,7 +18,6 @@ def get_user_passes(user_id):
         'pass_id': pas.id,
         'org_id': pas.org_id,
         'owner_id': pas.owner_id,
-        'user_id': pas.user_id,
         'request_time': pas.request_time,
         'requested_state_id': pas.requested_state_id,
         'requested_spot_num': pas.requested_spot_num,

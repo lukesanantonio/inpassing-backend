@@ -145,7 +145,6 @@ def verify_pass():
             req_choice.assigned_state_id = req_choice.requested_state_id
             req_choice.assigned_spot_num = req_choice.requested_spot_num
             req_choice.assigned_time = datetime.datetime.now()
-            req_choice.user_id = req_choice.owner_id
 
             db.session.commit()
 
