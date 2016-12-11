@@ -105,21 +105,17 @@ def me():
 
     }), 200
 
-@app.route('/me/pass_request', methods=['POST'])
+# Make a pass request
+@app.route('/orgs/<org_id>/pass')
 @jwt_required
-def me_request_pass():
+def me_request_pass(org_id):
     user_id = get_jwt_identity()
 
-    org_id = request.form.get('org_id')
     state_id = request.form.get('state_id')
     spot_num = request.form.get('spot_num')
 
     err = None
-    if org_id == None:
-        err = {
-            'msg': 'missing org_id'
-        }
-    elif state_id == None:
+    if state_id == None:
         err = {
             'msg': 'missing state_id'
         }
