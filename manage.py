@@ -113,13 +113,9 @@ def verify_pass():
     print('You picked {}'.format(org.name))
 
     # This finds all the un verified passes for this org
-    # reqs = db.session.query(PassRequest).filter(
-    #     and_(PassRequest.org_id == org.id, PassRequest.assigned_pass_id == None)
-    # ).all()
-
-    # For now, we don't know how to query passes that need to be verified by an
-    # org.
-    reqs = []
+    reqs = db.session.query(Pass).filter(
+        and_(Pass.org_id == org.id, Pass.assigned_time == None)
+    ).all()
 
     if len(reqs) == 0:
         print('No pass requests need to be verified')
@@ -132,10 +128,10 @@ def verify_pass():
         for i, req in enumerate(reqs):
             print('\t({}) Requestor: {} <ID={}>; Pass {}:{}'.format(
                 i + 1,
-                req.requestor.first_name + ' ' + req.requestor.last_name,
-                req.requestor_id,
-                req.state_id,
-                req.spot_num)
+                req.owner.first_name + ' ' + req.owner.last_name,
+                req.owner.id,
+                req.requested_state_id,
+                req.requested_spot_num)
             )
 
         req_choice = choice('Request to verify: ', reqs)
@@ -145,16 +141,11 @@ def verify_pass():
             # This is all verified now
             reqs.remove(req_choice)
 
-            # Make a new pass given the information from the request
-            new_pass = Pass(org_id=org.id, owner_id=req_choice.requestor_id,
-                            state_id=req_choice.state_id,
-                            spot_num=req_choice.spot_num)
-
-            db.session.add(new_pass)
-
-            # Record the assigned pass and time at which it was assigned
-            req_choice.assigned_pass = new_pass
-            req_choice.assignment_time = datetime.datetime.now()
+            # Approve the request
+            req_choice.assigned_state_id = req_choice.requested_state_id
+            req_choice.assigned_spot_num = req_choice.requested_spot_num
+            req_choice.assigned_time = datetime.datetime.now()
+            req_choice.user_id = req_choice.owner_id
 
             db.session.commit()
 

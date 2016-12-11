@@ -5,10 +5,11 @@ from flask import request, jsonify
 
 from . import pass_util
 from .app import app
-from .models import Org, User, db
+from .models import Org, User, Pass, db
 
 from .utils import jwt_optional
 
+import datetime
 import json
 import bcrypt
 
@@ -131,16 +132,17 @@ def me_request_pass():
         return jsonify(err), 422
 
     # Create a new request in the request log
-    req = PassRequest(org_id = org_id,
-                      requestor_id = user_id,
-                      state_id = state_id,
-                      spot_num = spot_num)
+    req = Pass(org_id = org_id,
+               owner_id = user_id,
+               requested_state_id = state_id,
+               requested_spot_num = spot_num,
+               request_time = datetime.datetime.now())
 
     db.session.add(req)
     db.session.commit()
 
     return jsonify({
-        'request_id': req.id
+        'pass_id': req.id
     }), 200
 
 # Idea?
