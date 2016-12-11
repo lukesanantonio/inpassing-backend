@@ -105,6 +105,13 @@ def me():
 
     }), 200
 
+@app.route('/me/passes')
+@jwt_required
+def me_passes():
+    return jsonify({
+        'passes': pass_util.get_user_passes(user_id)
+    }), 200
+
 # Make a pass request
 @app.route('/orgs/<org_id>/pass')
 @jwt_required
@@ -140,12 +147,6 @@ def me_request_pass(org_id):
     return jsonify({
         'pass_id': req.id
     }), 200
-
-# Idea?
-# @app.route('/me/pending_passes') *or*
-# @app.route('/me/pending_requests') *and*
-# @app.route('/me/owned_passes') *and*
-# @app.route('/me/using_passes')
 
 @app.route('/orgs/<org_id>')
 @jwt_optional
