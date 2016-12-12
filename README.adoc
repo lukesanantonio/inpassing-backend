@@ -16,9 +16,8 @@ Users can moderate an org or participate in an org.
 Passes are defined by a state and a spot number. The state could be 'A', 'B' for
 A-B parking or 'M', 'T', 'W', etc for schedules that work on a weekly basis.
 Passes don't exist until they are claimed by a user and verified by an org.
-Passes are requested through the requestlog table, which stores the user who is
-making the request, along with the *requested* state and spot. The Org may
-decide to assign the user to a different spot, however.
+Passes store a requested state and spot number, but must be verified by an org
+at which point they may assign a different state and spot number.
 
 == DayState
 Right now it's basically a string that users of the service will recognize, IE
