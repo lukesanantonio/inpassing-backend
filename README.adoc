@@ -40,10 +40,15 @@ Right now it's basically a string that users of the service will recognize, IE
   this user moderates in, and all types of passes: pending, owned, and lent.
 | User auth token
 | None
-| `POST /me/pass_request`
-| Requests a pass on behalf of the user. Returns the new request ID.
+| `GET /me/passes`
+| Returns only the passes information from `GET /me`.
 | User auth token
-| Form data: `org_id`, `state_id`, `spot_num`.
+| None
+| `GET /orgs/<org_id>/pass`
+| Requests a pass on behalf of the current user. Returns the new pass ID. It
+  will need to be verified by the org before it can be used.
+| User auth token
+| Form data: `state_id`, `spot_num`.
 | `GET /orgs/<org_id>`
 | Returns a JSON object describing the org. If the current user (given an auth
   token) is not a participant or mod of the org, only the name is provided.
