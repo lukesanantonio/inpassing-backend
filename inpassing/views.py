@@ -68,7 +68,7 @@ def user_signup():
     }), 200
 
 # Idea: Add anonymous auth @ GET /auth/anon.jwt or something
-@app.route('/auth/user.jwt', methods=['POST'])
+@app.route('/user/auth', methods=['POST'])
 def auth_user():
     in_email = request.form.get('email', '')
     in_passwd = request.form.get('password', '')
