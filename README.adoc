@@ -63,6 +63,33 @@ Right now it's basically a string that users of the service will recognize, IE
 
 == Implementing borrow and lend
 
+There are a few things we want our system to accomplish:
+
+. Requests for a pass are first-come-first-serve.
+. One person shouldn't be able to request a pass for every day, putting them in
+the front of every queue for the foreseeable future.
+. People must be able to have multiple requests for a pass open at a time.
+.. This will enable requests for passes on specific dates, specific blocks of
+dates, indefinitely (until a pass comes up), etc.
+. People should be able to request a pass the day of and receive it immediately,
+if possible. This is a bit of an issue if everyone joins the indefinite queue.
+
+.Ideas
+. Have a lender (producer) and borrower (consumer) queue for each day and
+another set of queues for indefinite users.
+. Attach some unique (preferably ordered) token to each user and each request
+they make.
+. Match up producers with borrowers at some point (not necessary immediately).
+. When a borrower uses a pass, all of their future requests are moved to the
+back of their respective queue. This could be implemented by identifying the
+request with the token, then updating the token and re-adding the user's request
+at the back of the queue.
+.. This would only happen when the lender "consumes" the pass. We want to wait
+as long as possible to "lock-in" each pass so that we allow for more people to
+join the queue and possibly get a pass if someone in front of them is moved back.
+.. The indefinite list will not automatically be considered for queues that have
+already been locked-in.
+
 .Endpoint Ideas
 . `GET /me/lend/<pass_id>?start_date=<>&end_date=<>`
 . `GET /me/borrow?type="date_range"&start_date=<>&end_date=<>`
