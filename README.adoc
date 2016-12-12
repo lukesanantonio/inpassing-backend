@@ -55,6 +55,11 @@ Right now it's basically a string that users of the service will recognize, IE
   Otherwise the greeting and rules are provided as well.
 | User auth token
 | URL: `org_id`
+| `GET /orgs/search`
+| Searches organization by name, returning its ID and full name. `q` parameter
+  is the search string.
+| None
+| URL: `q`
 |===
 
 == Implementing borrow and lend
