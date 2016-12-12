@@ -118,8 +118,8 @@ def me_passes():
 def me_request_pass(org_id):
     user_id = get_jwt_identity()
 
-    state_id = request.form.get('state_id')
-    spot_num = request.form.get('spot_num')
+    state_id = request.args.get('state_id')
+    spot_num = request.args.get('spot_num')
 
     err = None
     if state_id == None:
