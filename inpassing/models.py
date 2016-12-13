@@ -89,6 +89,8 @@ class User(db.Model):
     email = db.Column(db.String(255))
     password = db.Column(db.String(255))
 
+    transfer_token = db.Column(db.Integer, default=0)
+
     # Relationship with organizations
     participates = db.relationship('Org', secondary='org_participants',
                                    back_populates='participants')
@@ -120,6 +122,8 @@ class Pass(db.Model):
     assigned_spot_num = db.Column(db.Integer)
 
     assigned_time = db.Column(db.DateTime)
+
+    transfer_token = db.Column(db.Integer, default=0)
 
 # The transfer log records the time and to whom a pass was lent to. This will
 # mainly be used for logging purposes.
