@@ -7,7 +7,7 @@ from . import pass_util
 from .app import app
 from .models import Org, User, Pass, db
 
-from .utils import jwt_optional
+from .util import jwt_optional
 
 import datetime
 import json
