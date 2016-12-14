@@ -1,6 +1,8 @@
 # Copyright (c) 2016 Luke San Antonio Bialecki
 # All rights reserved.
 
+DATE_FMT = '%Y-%m-%d'
+
 CONSUMER_QUEUE_FMT = '{}:{}:consumer'
 def consumer_queue(org_id, date):
     return CONSUMER_QUEUE_FMT.format(org_id, str(date))
