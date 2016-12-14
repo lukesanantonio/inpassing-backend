@@ -6,6 +6,8 @@ from flask_jwt_extended import utils
 from flask_jwt_extended.utils import ctx_stack
 from flask_jwt_extended.exceptions import NoAuthorizationError
 
+from datetime import timedelta
+
 def jwt_optional(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
@@ -33,4 +35,4 @@ def jwt_optional(fn):
 def range_inclusive_dates(start, end):
     date_range = end - start
     for day_i in range(date_range.days + 1):
-        yield start + timedelta(days=(start + day_i))
+        yield start + timedelta(days=day_i)
