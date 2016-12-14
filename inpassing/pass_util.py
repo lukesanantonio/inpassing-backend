@@ -7,8 +7,8 @@ from .models import Pass, db
 from datetime import date, timedelta
 
 from .util import range_inclusive_dates
-from .queue_util import (consumer_queue, producer_queue, user_borrow_set,
-                         user_lend_set, user_borrow, user_lend)
+from .worker.queue_util import (consumer_queue, producer_queue, user_borrow_set,
+                               user_lend_set, user_borrow, user_lend)
 
 def get_user_passes(user_id):
     """Returns all owned, borrowed and requested passes of a user."""
