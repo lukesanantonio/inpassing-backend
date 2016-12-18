@@ -7,7 +7,7 @@ from . import pass_util
 from .app import app
 from .models import Org, User, Pass, db
 
-from .util import jwt_optional
+from .util import jwt_optional, range_inclusive_dates
 
 import datetime
 import json
@@ -16,7 +16,17 @@ import bcrypt
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token,\
     create_refresh_token, jwt_refresh_token_required, get_jwt_identity
 
+from datetime import timedelta, datetime
+
+from .worker import DATE_FMT
+
+import redis
+from .worker.queue import LiveObj, LiveOrg
+
 jwt = JWTManager(app)
+
+redis = redis.StrictRedis(host='localhost', port=6379, db=0)
+live_orgs = {}
 
 @jwt.user_identity_loader
 def user_identity(ident):
@@ -194,3 +204,106 @@ def org_search():
 
     orgs = db.session.query(Org).filter(Org.name.like('%' + query + '%')).all()
     return jsonify([{'id': org.id, 'name': org.name } for org in orgs]), 200
+
+class MissingDateError(Exception):
+    def __str__(self):
+        return 'must provide date *or* start_date and end_date'
+
+class EndDateTooEarlyError(Exception):
+    def __str__(self):
+        return 'start_date must come before end_date'
+
+def get_date_pair(date_in, start_date_in, end_date_in):
+    start_date = None
+    end_date = None
+
+    if date_in != None:
+        date = datetime.strptime(date_in, DATE_FMT)
+        start_date = date
+        end_date = date
+    else:
+        if start_date_in == None or end_date_in == None:
+            raise MissingDateError
+        else:
+            start_date = datetime.strptime(start_date_in, DATE_FMT)
+            end_date = datetime.strptime(end_date_in, DATE_FMT)
+
+    if end_date < start_date:
+        raise EndDateTooEarlyError
+
+    return start_date, end_date
+
+def get_live_org(org_id):
+    if org_id not in live_orgs:
+        live_orgs[org_id] = LiveOrg(redis, org_id)
+
+    return live_orgs[org_id]
+
+@app.route('/pass/borrow', methods=['POST'])
+@jwt_required
+def borrow_pass():
+    user_obj = db.session.query(User).filter_by(id=get_jwt_identity()).first()
+    if user_obj == None:
+        return jsonify({
+            'msg': "user {} doesn't exist, this is really bad".format(pass_id)
+        }), 404
+
+    # Make sure we were also given an org id.
+    org_id = request.form.get('org_id')
+    if org_id == None:
+        return jsonify({
+            'msg': 'missing org'
+        }), 422
+
+    try:
+        start_date, end_date = get_date_pair(request.form.get('date'),
+                                             request.form.get('start_date'),
+                                             request.form.get('end_date'))
+    except (MissingDateError, EndDateTooEarlyError) as e:
+        return jsonify({
+            'msg': str(e)
+        }), 422
+
+    live_org = get_live_org(org_id)
+
+    ret_obj = {}
+    for date in range_inclusive_dates(start_date, end_date):
+        enqueued = live_org.enqueue_user_borrow(date, user_obj.id)
+        ret_obj[date.strftime(DATE_FMT)] = {
+            'enqueued': enqueued
+        }
+
+    return jsonify(ret_obj), 200
+
+@app.route('/pass/<pass_id>/lend', methods=['POST'])
+@jwt_required
+def lend_pass(pass_id):
+    # Make sure we were given a valid pass
+
+    pass_obj = db.session.query(Pass).filter_by(id=pass_id).first()
+    if pass_obj == None:
+        return jsonify({
+            'msg': "pass {} doesn't exist".format(pass_id)
+        }), 404
+
+    try:
+        start_date, end_date = get_date_pair(request.form.get('date'),
+                                             request.form.get('start_date'),
+                                             request.form.get('end_date'))
+    except (MissingDateError, EndDateTooEarlyError) as e:
+        return jsonify({
+            'msg': str(e)
+        }), 422
+
+    live_org = get_live_org(pass_obj.org_id)
+
+    ret_obj = {}
+    for date in range_inclusive_dates(start_date, end_date):
+        enqueued = live_org.enqueue_pass_lend(date, pass_obj.id)
+        ret_obj[date.strftime(DATE_FMT)] = {
+            'enqueued': enqueued
+        }
+
+    # Should we have a way to mark a queue as retired? Or should that be
+    # inferred based on whether the queue is in the org's active-queue list.
+    return jsonify(ret_obj), 200
