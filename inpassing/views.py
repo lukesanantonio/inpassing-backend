@@ -123,7 +123,7 @@ def me_passes():
     }), 200
 
 # Give the user a new pass (or at least request one).
-@app.route('/orgs/<org_id>/pass', methods=['POST'])
+@app.route('/org/<org_id>/pass', methods=['POST'])
 @jwt_required
 def me_request_pass(org_id):
     user_id = get_jwt_identity()
@@ -158,7 +158,7 @@ def me_request_pass(org_id):
         'pass_id': req.id
     }), 200
 
-@app.route('/orgs/<org_id>')
+@app.route('/org/<org_id>')
 @jwt_optional
 def org_get(org_id):
     # Find the org by id
@@ -194,7 +194,7 @@ def org_get(org_id):
 
     return jsonify(ret), 200
 
-@app.route('/orgs/search')
+@app.route('/org/search')
 def org_search():
     query = request.args.get('q')
     if query == None:

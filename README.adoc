@@ -46,18 +46,18 @@ Right now it's basically a string that users of the service will recognize, IE
 | Returns only the pass information from `GET /me`.
 | `Authorization: Bearer <token>`
 | None
-| `POST /orgs/<org_id>/pass`
+| `POST /org/<org_id>/pass`
 | Requests a pass on behalf of the current user. Returns the new pass ID. It
   will need to be verified by the org before it can be used.
 | `Authorization: Bearer <token>`
 | Form data: `state_id`, `spot_num`.
-| `GET /orgs/<org_id>`
+| `GET /org/<org_id>`
 | Returns a JSON object describing the org. If the current user (given an auth
   token) is not a participant or mod of the org, only the name is provided.
   Otherwise the greeting and rules are provided as well.
 | Optional: `Authorization: Bearer <token>`
 | None
-| `GET /orgs/search`
+| `GET /org/search`
 | Searches organization by name, returning its ID and full name. `q` parameter
   is the search string.
 | None
