@@ -28,37 +28,50 @@ Right now it's basically a string that users of the service will recognize, IE
 
 |===
 | Endpoint | Description | Authentication | Parameters / Form
-| `POST /auth/user.jwt`
-| Authenticates the user. Return a user auth token to be used header like
-  `Authorization: Bearer <token>`
+| `POST /user/signup`
+| Creates a new user returning its ID in a json object
+| None
+| Form data: `first_name`, `last_name`, `email`, `password`
+| `POST /user/auth`
+| Authenticates the user and returns a "Bearer" token.
 | None
 | Form data: `email`, `password`
 | `GET /me`
 | Returns JSON object of user information based on login token. Includes id,
   first_name, last_name, email, orgs that this user participates in, orgs that
   this user moderates in, and all types of passes: pending, owned, and lent.
-| User auth token
+| `Authorization: Bearer <token>`
 | None
 | `GET /me/passes`
-| Returns only the passes information from `GET /me`.
-| User auth token
+| Returns only the pass information from `GET /me`.
+| `Authorization: Bearer <token>`
 | None
-| `GET /orgs/<org_id>/pass`
+| `POST /orgs/<org_id>/pass`
 | Requests a pass on behalf of the current user. Returns the new pass ID. It
   will need to be verified by the org before it can be used.
-| User auth token
+| `Authorization: Bearer <token>`
 | Form data: `state_id`, `spot_num`.
 | `GET /orgs/<org_id>`
 | Returns a JSON object describing the org. If the current user (given an auth
   token) is not a participant or mod of the org, only the name is provided.
   Otherwise the greeting and rules are provided as well.
-| User auth token
-| URL: `org_id`
+| Optional: `Authorization: Bearer <token>`
+| None
 | `GET /orgs/search`
 | Searches organization by name, returning its ID and full name. `q` parameter
   is the search string.
 | None
 | URL: `q`
+| `POST /pass/borrow`
+| Requests a pass on behalf of the user on the given date or date range. Dates
+  should be given in the format YYYY-MM-DD (eg 2017-03-31)
+| `Authorization: Bearer <token>`
+| Form data: `date` _or_ `start_date` and `end_date`
+| `POST /pass/<pass_id>/lend`
+| Lends a pass on the given date or date range. See above for the date format.
+  Users can only lend passes they have the rights to at that moment.
+| `Authorization: Bearer <token>`
+| Form data: `date` _or_ `start_date` and `end_date`
 |===
 
 == Implementing borrow and lend
@@ -89,10 +102,3 @@ as long as possible to "lock-in" each pass so that we allow for more people to
 join the queue and possibly get a pass if someone in front of them is moved back.
 .. The indefinite list will not automatically be considered for queues that have
 already been locked-in.
-
-.Endpoint Ideas
-. `GET /me/lend/<pass_id>?start_date=<>&end_date=<>`
-. `GET /me/borrow?type="date_range"&start_date=<>&end_date=<>`
-. `GET /me/borrow?type="date"&date=<>`
-. `GET /me/borrow?type="indefinite"`
-. `GET /me/borrow?type="perpetual"`
