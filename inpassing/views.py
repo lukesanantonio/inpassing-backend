@@ -204,14 +204,14 @@ def org_get(org_id):
 
     if user:
         if org in user.participates:
-            if org in user.moderates:
-                # We don't have any more information to give out to moderators.
-                pass
-
             # The user will need this.
             ret.update({
                 'day_state_greeting_fmt': org.day_state_greeting_fmt or '',
                 'parking_rules': json.loads(org.parking_rules or '{}'),
+            })
+        if org in user.moderates:
+            ret.update({
+                'unverified_passes': pass_util.get_org_unverified_passes(org.id)
             })
 
     return jsonify(ret), 200

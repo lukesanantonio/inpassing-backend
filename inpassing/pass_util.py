@@ -31,3 +31,25 @@ def get_user_passes(user_id):
     } for pas in passes])
 
     return ret
+
+def get_org_unverified_passes(org_id):
+
+    # This function and the one before it are basically the same thing, this one
+    # does the slightly different query and removes some of the members of the
+    # return data points.
+
+    reqs = db.session.query(Pass).filter(
+        and_(Pass.org_id == org_id, Pass.assigned_time == None)
+    ).all()
+
+    ret = []
+    ret.extend([{
+        'pass_id': p.id,
+        'org_id': p.org_id,
+        'owner_id': p.owner_id,
+        'request_time': p.request_time,
+        'requested_state_id': p.requested_state_id,
+        'requested_spot_num': p.requested_spot_num,
+    } for p in reqs])
+
+    return ret
