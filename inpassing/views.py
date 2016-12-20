@@ -171,7 +171,7 @@ def me_request_pass(org_id):
                owner_id = user_id,
                requested_state_id = state_id,
                requested_spot_num = spot_num,
-               request_time = datetime.datetime.now())
+               request_time = datetime.now())
 
     db.session.add(req)
     db.session.commit()
