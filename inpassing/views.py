@@ -122,6 +122,28 @@ def me_passes():
         'passes': pass_util.get_user_passes(get_jwt_identity())
     }), 200
 
+@app.route('/org', methods=['POST'])
+@jwt_required
+def org_create():
+    name = request.form.get('name')
+    if name == None:
+        return jsonify({
+            'msg': 'missing org name'
+        }), 422
+
+    org = Org(name=name)
+    db.session.add(org)
+
+    # Make this user a moderator
+    user = db.session.query(User).filter_by(id=get_jwt_identity()).first()
+    org.mods.append(user)
+    db.session.commit()
+
+    return jsonify({
+        'msg': 'success',
+        'org_id': org.id
+    }), 200
+
 # Give the user a new pass (or at least request one).
 @app.route('/org/<org_id>/pass', methods=['POST'])
 @jwt_required
