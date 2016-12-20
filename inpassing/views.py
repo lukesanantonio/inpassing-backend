@@ -144,42 +144,6 @@ def org_create():
         'org_id': org.id
     }), 200
 
-# Give the user a new pass (or at least request one).
-@app.route('/org/<org_id>/pass', methods=['POST'])
-@jwt_required
-def me_request_pass(org_id):
-    user_id = get_jwt_identity()
-
-    state_id = request.form.get('state_id')
-    spot_num = request.form.get('spot_num')
-
-    err = None
-    if state_id == None:
-        err = {
-            'msg': 'missing state_id'
-        }
-    elif spot_num == None:
-        err = {
-            'msg': 'missing spot_num'
-        }
-
-    if err != None:
-        return jsonify(err), 422
-
-    # Create a new request in the request log
-    req = Pass(org_id = org_id,
-               owner_id = user_id,
-               requested_state_id = state_id,
-               requested_spot_num = spot_num,
-               request_time = datetime.now())
-
-    db.session.add(req)
-    db.session.commit()
-
-    return jsonify({
-        'pass_id': req.id
-    }), 200
-
 @app.route('/org/<org_id>')
 @jwt_optional
 def org_get(org_id):
@@ -215,6 +179,42 @@ def org_get(org_id):
             })
 
     return jsonify(ret), 200
+
+# Give the user a new pass (or at least request one).
+@app.route('/org/<org_id>/pass', methods=['POST'])
+@jwt_required
+def me_request_pass(org_id):
+    user_id = get_jwt_identity()
+
+    state_id = request.form.get('state_id')
+    spot_num = request.form.get('spot_num')
+
+    err = None
+    if state_id == None:
+        err = {
+            'msg': 'missing state_id'
+        }
+    elif spot_num == None:
+        err = {
+            'msg': 'missing spot_num'
+        }
+
+    if err != None:
+        return jsonify(err), 422
+
+    # Create a new request in the request log
+    req = Pass(org_id = org_id,
+               owner_id = user_id,
+               requested_state_id = state_id,
+               requested_spot_num = spot_num,
+               request_time = datetime.now())
+
+    db.session.add(req)
+    db.session.commit()
+
+    return jsonify({
+        'pass_id': req.id
+    }), 200
 
 # Add this so that we can do this live with AJAX or something
 @app.route('/org/<org_id>/unverified_passes')
