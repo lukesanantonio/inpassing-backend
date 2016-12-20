@@ -119,7 +119,7 @@ def me():
 @jwt_required
 def me_passes():
     return jsonify({
-        'passes': pass_util.get_user_passes(user_id)
+        'passes': pass_util.get_user_passes(get_jwt_identity())
     }), 200
 
 # Give the user a new pass (or at least request one).
