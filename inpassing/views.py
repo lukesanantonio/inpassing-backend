@@ -216,6 +216,24 @@ def org_get(org_id):
 
     return jsonify(ret), 200
 
+# Add this so that we can do this live with AJAX or something
+@app.route('/org/<org_id>/unverified_passes')
+@jwt_required
+def org_unverified_passes(org_id):
+    user = db.session.query(User).filter_by(id=get_jwt_identity()).first()
+
+    # Is there any way to avoid this query in order to check if a user is a mod?
+    org = db.session.query(Org).filter_by(id=org_id).first()
+
+    if org not in user.moderates:
+        return jsonify({
+            'msg': 'user {} must moderate org {}'.format(user.id, org_id)
+        }), 403
+
+    return jsonify({
+        'unverified_passes': pass_util.get_org_unverified_passes(org_id)
+    }), 200
+
 @app.route('/org/search')
 def org_search():
     query = request.args.get('q')
