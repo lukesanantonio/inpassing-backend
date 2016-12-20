@@ -234,6 +234,33 @@ def org_unverified_passes(org_id):
         'unverified_passes': pass_util.get_org_unverified_passes(org_id)
     }), 200
 
+@app.route('/org/<org_id>/assign_pass', methods=['POST'])
+@jwt_required
+def org_verify_pass(org_id):
+    pass_id = request.form.get('pass_id')
+    if pass_id == None:
+        return jsonify({
+            'msg': 'missing pass_id'
+        }), 422
+
+    state_id = request.form.get('state_id')
+    spot_num = request.form.get('spot_num')
+
+    p = db.session.query(Pass).filter_by(id=pass_id).first()
+    if p == None:
+        return jsonify({
+            'msg': 'nonexistent pass {}'.format(pass_id)
+        }), 422
+
+    p.assigned_time = datetime.now()
+    p.assigned_state_id = state_id or p.requested_state_id
+    p.assigned_spot_num = spot_num or p.requested_spot_num
+    db.session.commit()
+
+    return jsonify({
+        'msg': 'success'
+    }), 200
+
 @app.route('/org/search')
 def org_search():
     query = request.args.get('q')
