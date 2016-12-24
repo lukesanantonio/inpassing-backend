@@ -1,0 +1,312 @@
+FORMAT: 1A
+HOST: http://polls.apiblueprint.org/
+
+# inpassing
+
+A web API for managing the lending and borrowing of passes.
+
+## Org [/orgs]
+
++ Attribute
+    + id: 2 (number)
+    + name: Locust Valley High School (string)
+
+### Create a new org [POST]
+
++ Request (application/json)
+
+        {
+            "name": "Locust Valley High School"
+        }
+
++ Response 201
+
+    + Headers
+
+            Location: /orgs/2
+
+### Search orgs by name [GET /orgs/search{?q}]
+
++ Parameters
+
+    - q: `Locust Valley` (string) - Query string
+
++ Response 200 (application/json)
+
+        [
+            {
+                "id": 2,
+                "name": "Locust Valley High School"
+            }
+        ]
+
+### Query an org [GET /orgs/{id}]
+
++ Parameters
+
+    - id (number) - Org ID
+
++ Request Anonymous
+
+    Without authentication, only basic information about an org will be returned.
+    
+    + Body
+
++ Response 200 (application/json)
+
+    + Attributes (Org)
+
++ Request Authenticated
+
+    Use authentication to get more information about an org relevant to the user's role in that org.
+
+    + Header
+    
+            Authorization: Bearer JWT
+            
++ Response 200 (application/json)
+
+    + Attributes (Org)
+        + greeting_fmt: `Today is a {} day` (string) - The greeting format
+
+### Query org passes [GET /orgs/{id}/passes]
+
+Returns all passes associated with an org. The authenticated user must be a mod of this org.
+
++ Request
+
+    + Header
+    
+            Authorization: Bearer JWT
+            
++ Response 200 (application/json)
+
+    + Attributes (array[Pass])
+
+## User [/users]
+
++ Attributes
+
+    + id (number)
+    + first_name (string)
+    + last_name (string)
+    + email (string)
+    + moderates (array[Org])
+    + participates (array[Org])
+    + passes (array[Pass])
+
+### Create a user [POST]
+
++ Request (application/json)
+
+    + Attributes
+        + first_name: Luke (string) - User first name
+        + last_name: San Antonio Bialecki (string) - User last name
+        + email: `itried@gmail.com` (string) - User email (used to log in)
+        + password: `iUs3tHe$aMepAs$wOrdF0rEvEritHiNg` (string) - User password
+
++ Response 201 (application/json)
+
+    + Headers
+
+            Location: /users/2
+            
+    + Body
+    
+            {
+                "msg": "Successfully created user"
+            }
+
+### Authenticate as user [POST /users/auth]
+
++ Request (application/json)
+
+        {
+            "email": "itried@gmail.com",
+            "password": "iUs3tHe$aMepAs$wOrdF0rEvEritHiNg"
+        }
+
++ Response 200 (application/json)
+
+        {
+            "access_token": "<JWT_TOKEN>"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "msg": "invalid username or password"
+        }
+
+## Self [/me]
+
+### Query self [GET]
+
++ Request
+
+    + Header
+
+            Authentication: Bearer JWT
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+                "id": 2,
+                "first_name": "Luke"
+                "last_name": "San Antonio Bialecki",
+                "email": "itried@gmail.com",
+                "participates": [
+                    {
+                        "id": 2,
+                        "name": "Locust Valley High School"
+                    }
+                ],
+                "moderates": [
+                    {
+                        "id": 1,
+                        "name": "Test org"
+                    }
+                ],
+                "passes": [
+                    {
+                        "id": 3,
+                        "org_id": 2,
+                        "owner_id": 2,
+                        "request_time": "2017-02-03:23:00:12",
+                        "requested_state_id": 2,
+                        "requested_spot_num": 20,
+                        "assigned_time": "2017-02-04:07:42:12",
+                        "assigned_state_id": 2,
+                        "assigned_spot_num": 15
+                    },
+                    {
+                        "id": 4,
+                        "org_id": 2,
+                        "owner_id": 2,
+                        "request_time": "2017-02-06:13:55:32",
+                        "requested_state_id": 2,
+                        "requested_spot_num": 20,
+                        "assigned_time": null,
+                        "assigned_state_id": null,
+                        "assigned_spot_num": null
+                    }
+                ]
+            }
+
+### Query passes [GET /me/passes]
+
+Retrieves a list of all passes relevant to the authenticated user.
+
++ Request
+
+    + Header
+
+            Authentication: Bearer JWT
+            
++ Response 200 (application/json)
+
+    + Attributes
+        + passes (array[Pass]) - Passes relevent to the authenticated user
+
+### Borrow a pass [POST /me/passes/borrow]
+
+Creates a request to borrows a pass on behalf of the user
+
++ Request
+
+    + Header
+
+            Authentication: Bearer JWT
+
++ Response 200 (application/json)
+
+    + Body
+    
+            {
+                "msg": "borrow request successful"
+            }
+
+### Lend a pass [POST /me/passes/{pass_id}/lend]
+
++ Parameters
+    + pass_id (number) - The pass to lend
+
++ Request
+
+    + Header
+
+            Authentication: Bearer JWT
+            
++ Response 200 (application/json)
+
+    + Body
+    
+            {
+                "msg": "lend request successful"
+            }
+
+## Pass [/passes]
+
++ Attributes
+    + id: 2 (number) - The pass ID
+    + org_id: 1 (number) - The org that this pass belongs to
+    + owner_id: 3 (number, nullable) - The user owner of the pass
+    + request_time: `2017-02-03;23:00:12` (string) - Date and time of the pass request
+    + requested_state_id: 2 (number) - Pass state requested by the user
+    + requested_spot_num: 20 (number) - Pass spot requested by the user
+    + assigned_time: `2017-02-03;23:15:12` (string, nullable) - Date and time when the pass was assigned / verified
+    + assigned_state_id: 2 (number, nullable) - Pass state assigned to this pass
+    + assigned_spot_num: 25 (number, nullable) - Pass spot number assigned to this pass
+
+### Request a new pass [POST]
+
+Requests a new pass from an Org on behalf of the authenticated user.
+
++ Request (application/json)
+    
+    + Header
+        
+            Authentication: Bearer JWT
+            
+    + Attributes
+        + org_id (number) - The Org that the pass is to be requested from
+        + state_id (number) - The requested day state of the pass
+        + spot_num (number) - The requested spot number
+            
++ Response 201 (application/json)
+
+    Note that although the pass object exists, the org will still need to verify it for it to be useful.
+
+    + Header
+            
+            Location: /passes/2
+            
+    + Attributes (Pass)
+        + assigned_time - null
+        + assigned_state_id - null
+        + assigned_spot_num - null
+            
+### Query pass [GET /passes/{id}]
+
++ Request
+
+    + Header
+
+            Authorization: Bearer JWT
+
++ Response 200 (application/json)
+
+    + Attributes (Pass)
+            
++ Response 403 (application/json)
+    
+    You can only query passes that you would have access to either as an org moderator or a user!
+    
+    + Body
+    
+            {
+                "msg": "not authenticated to view this pass",
+                "error_code": "foreign_pass"
+            }
