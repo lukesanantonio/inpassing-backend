@@ -69,20 +69,6 @@ A web API for managing the lending and borrowing of passes.
     + Attributes (Org)
         + greeting_fmt: `Today is a {} day` (string) - The greeting format
 
-### Query org passes [GET /orgs/{id}/passes]
-
-Returns all passes associated with an org. The authenticated user must be a mod of this org.
-
-+ Request
-
-    + Header
-    
-            Authorization: Bearer JWT
-            
-+ Response 200 (application/json)
-
-    + Attributes (array[Pass])
-
 ## User [/users]
 
 + Attributes
@@ -105,17 +91,11 @@ Returns all passes associated with an org. The authenticated user must be a mod 
         + email: `itried@gmail.com` (string) - User email (used to log in)
         + password: `iUs3tHe$aMepAs$wOrdF0rEvEritHiNg` (string) - User password
 
-+ Response 201 (application/json)
++ Response 201
 
     + Headers
 
             Location: /users/2
-            
-    + Body
-    
-            {
-                "msg": "Successfully created user"
-            }
 
 ### Authenticate as user [POST /users/auth]
 
@@ -195,59 +175,7 @@ Returns all passes associated with an org. The authenticated user must be a mod 
                 ]
             }
 
-### Query passes [GET /me/passes]
-
-Retrieves a list of all passes relevant to the authenticated user.
-
-+ Request
-
-    + Header
-
-            Authentication: Bearer JWT
-            
-+ Response 200 (application/json)
-
-    + Attributes
-        + passes (array[Pass]) - Passes relevent to the authenticated user
-
-### Borrow a pass [POST /me/passes/borrow]
-
-Creates a request to borrows a pass on behalf of the user
-
-+ Request
-
-    + Header
-
-            Authentication: Bearer JWT
-
-+ Response 200 (application/json)
-
-    + Body
-    
-            {
-                "msg": "borrow request successful"
-            }
-
-### Lend a pass [POST /me/passes/{pass_id}/lend]
-
-+ Parameters
-    + pass_id (number) - The pass to lend
-
-+ Request
-
-    + Header
-
-            Authentication: Bearer JWT
-            
-+ Response 200 (application/json)
-
-    + Body
-    
-            {
-                "msg": "lend request successful"
-            }
-
-## Pass [/passes]
+## Pass [/passes{?org_id,user_id,verified}]
 
 + Attributes
     + id: 2 (number) - The pass ID
@@ -260,6 +188,27 @@ Creates a request to borrows a pass on behalf of the user
     + assigned_state_id: 2 (number, nullable) - Pass state assigned to this pass
     + assigned_spot_num: 25 (number, nullable) - Pass spot number assigned to this pass
 
+### Query pass collection [GET]
+
+Filters all the passes that the user has access to.
+If the user is the mod of an org, all org passes are available to filter.
+
++ Parameters
+    + org_id (number, optional) - Return passes associated with this Org
+    + user_id (number, optional) - Return passes associated with this user
+    + verified (boolean, optional) - Filter verified passes. If this is null or omitted, all passes will be returned.
+
++ Request (application/json)
+
+    + Header
+    
+            Authentication: Bearer JWT
+        
++ Response 200 (application/json)
+
+    + Attributes (array[Pass])
+
+
 ### Request a new pass [POST]
 
 Requests a new pass from an Org on behalf of the authenticated user.
@@ -271,9 +220,9 @@ Requests a new pass from an Org on behalf of the authenticated user.
             Authentication: Bearer JWT
             
     + Attributes
-        + org_id (number) - The Org that the pass is to be requested from
-        + state_id (number) - The requested day state of the pass
-        + spot_num (number) - The requested spot number
+        + org_id: 2 (number) - The Org that the pass is to be requested from
+        + state_id: 1 (number) - The requested day state of the pass
+        + spot_num: 25 (number) - The requested spot number
             
 + Response 201 (application/json)
 
@@ -289,6 +238,8 @@ Requests a new pass from an Org on behalf of the authenticated user.
         + assigned_spot_num - null
             
 ### Query pass [GET /passes/{id}]
+
+Get specific pass object
 
 + Request
 
@@ -310,3 +261,68 @@ Requests a new pass from an Org on behalf of the authenticated user.
                 "msg": "not authenticated to view this pass",
                 "error_code": "foreign_pass"
             }
+
+### Assign pass [PUT /passes/{id}/assign]
+
+Used to verify passes or re-assign them to different states or spot numbers.
+Any changes to the pass resulting from this call will result in `assigned_time` being updated.
+
++ Request
+
+    + Header
+    
+            Authorization: Bearer JWT
+            
+    + Attributes
+        + state_id (number, optional) - The new state of the pass
+        + spot_num (number, optional) - The new spot number of the pass
+            
++ Response 200 (application/json)
+    + Attributes (Pass)
+
+### Lend a pass [POST /passes/{pass_id}/lend]
+
+Creates a request to lend a pass on behalf of the user for every day in the date range.
+
+The pass will not be lent out on days that the user does not have access to the pass,
+but it is not an error to include these days in the date range.
+
++ Parameters
+    + pass_id (number) - The pass to lend
+
++ Request
+
+    + Header
+
+            Authentication: Bearer JWT
+            
+    + Attributes (Date Selection)
+            
++ Response 204
+
+### Borrow a pass [POST /passes/borrow]
+
+Creates a request to borrow a pass on behalf of the user for every day in the date range.
+
++ Request
+
+    + Header
+
+            Authentication: Bearer JWT
+
+    + Attributes (Date Selection)
+
++ Response 204
+
+# Data Structures
+
+## Date
++ date: `2017-03-05` (string) - Date
+
+## Date Range (object)
++ start_date: `2017-11-15` (string) - Start date
++ end_date: `2018-01-04` (string) - End date
+
+## Date Selection (enum)
++ (Date)
++ (Date Range)
