@@ -75,7 +75,7 @@ A web API for managing the lending and borrowing of passes.
     + id: 1 (number) - The ID of the day state.
     + Include Day State Create
 
-### Query states [GET]
+### Query state collection [GET]
 
 Return information about an org day state.
 
@@ -111,6 +111,19 @@ Creates a new day state associated with a given organization.
     + Attributes (Day State Create)
             
 + Response 201 (application/json)
+    + Attributes (Day State)
+
+### Query a state [GET /orgs/{org_id}/daystates/{daystate_id}]
+
+Returns a particular day state object.
+
++ Request
+
+    + Header
+    
+            Authorization: Bearer JWT
+            
++ Response 200 (application/json)
     + Attributes (Day State)
 
 ### Update a state [PUT /orgs/{org_id}/daystates/{daystate_id}]
