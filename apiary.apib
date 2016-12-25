@@ -344,6 +344,18 @@ Get specific pass object
                 "error_code": "foreign_pass"
             }
 
+### Delete a pass [DELETE /passes/{id}]
+
+Deletes a pass.
+
++ Request
+
+    + Header
+            
+            Authorization: Bearer JWT
+            
++ Response 202
+
 ### Assign pass [PUT /passes/{id}/assign]
 
 Used to verify passes or re-assign them to different states or spot numbers.
