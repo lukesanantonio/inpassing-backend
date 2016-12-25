@@ -204,6 +204,8 @@ Returns the current day state, this will change on a day by day basis.
 
 ### Query self [GET]
 
+Returns an object describing the authenticated user.
+
 + Request
 
     + Header
@@ -256,6 +258,35 @@ Returns the current day state, this will change on a day by day basis.
                     }
                 ]
             }
+
+### Borrow a pass [POST /me/borrow]
+
+Creates a request to borrow a pass on behalf of the authenticated user for every day in the date range.
+
++ Request
+
+    + Header
+
+            Authentication: Bearer JWT
+
+    + Attributes (Date Selection)
+
++ Response 204
+
+### Stop borrowing a pass [POST /me/unborrow]
+
+Removes a request to borrow a pass on behalf of the authenticated user in a given date range.
+
++ Request
+
+    + Header
+
+            Authentication: Bearer JWT
+
+    + Attributes (Date Selection)
+
++ Response 204
+
 
 ## Pass [/passes{?org_id,user_id,verified}]
 
@@ -394,20 +425,6 @@ but it is not an error to include these days in the date range.
             
 + Response 204
 
-### Borrow a pass [POST /passes/borrow]
-
-Creates a request to borrow a pass on behalf of the user for every day in the date range.
-
-+ Request
-
-    + Header
-
-            Authentication: Bearer JWT
-
-    + Attributes (Date Selection)
-
-+ Response 204
-
 ### Stop lending a pass [POST /passes/{pass_id}/unlend]
 
 Removes a request to lend a pass on behalf of the user in the given date range.
@@ -424,21 +441,6 @@ Removes a request to lend a pass on behalf of the user in the given date range.
     + Attributes (Date Selection)
             
 + Response 204
-
-### Stop borrowing a pass [POST /passes/unborrow]
-
-Removes a request to borrow a pass on behalf of the user in a given date range.
-
-+ Request
-
-    + Header
-
-            Authentication: Bearer JWT
-
-    + Attributes (Date Selection)
-
-+ Response 204
-
 
 # Data Structures
 
