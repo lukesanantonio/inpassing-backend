@@ -122,6 +122,11 @@ def user_is_participant(user_id, org_id):
     (ret,) = db.session.query(q.exists()).first()
     return ret
 
+def user_is_mod(user_id, org_id):
+    q = db.session.query(models.org_mods).filter_by(mod=user_id, org=org_id)
+    (ret,) = db.session.query(q.exists()).first()
+    return ret
+
 @app.route('/me/passes')
 @jwt_required
 def me_passes():
