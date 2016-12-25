@@ -396,6 +396,38 @@ Creates a request to borrow a pass on behalf of the user for every day in the da
 
 + Response 204
 
+### Stop lending a pass [POST /passes/{pass_id}/unlend]
+
+Removes a request to lend a pass on behalf of the user in the given date range.
+
++ Parameters
+    + pass_id (number) - The pass to unlend
+
++ Request
+
+    + Header
+
+            Authentication: Bearer JWT
+            
+    + Attributes (Date Selection)
+            
++ Response 204
+
+### Stop borrowing a pass [POST /passes/unborrow]
+
+Removes a request to borrow a pass on behalf of the user in a given date range.
+
++ Request
+
+    + Header
+
+            Authentication: Bearer JWT
+
+    + Attributes (Date Selection)
+
++ Response 204
+
+
 # Data Structures
 
 ## Date
