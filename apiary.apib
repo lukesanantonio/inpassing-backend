@@ -69,6 +69,88 @@ A web API for managing the lending and borrowing of passes.
     + Attributes (Org)
         + greeting_fmt: `Today is a {} day` (string) - The greeting format
 
+## Day State [/orgs/{org_id}/daystates]
+
++ Attributes
+    + id: 1 (number) - The ID of the day state.
+    + Include Day State Create
+
+### Query states [GET]
+
+Return information about an org day state.
+
++ Parameters
+    + org_id: 2 (number) - The org whose states are to be queried.
+
++ Request
+
+    The authenticated user must be a participant or moderator of the org to query states.
+
+    + Header
+    
+            Authorization: Bearer JWT
+            
++ Response 200 (application/json)
+    + Attributes (array[Day State])
+
+### Create a state [POST]
+
+Creates a new day state associated with a given organization.
+
++ Parameters
+    + org_id: 2 (number) - The org that will receive the new state.
+
++ Request
+
+    The authenticated user must moderate the org
+
+    + Header
+    
+            Authorization: Bearer JWT
+            
+    + Attributes (Day State Create)
+            
++ Response 201 (application/json)
+    + Attributes (Day State)
+
+### Update a state [PUT /orgs/{org_id}/daystates/{daystate_id}]
+
+Changes the identifier and/or greeting of a day state.
+
++ Request (application/json)
+
+    + Header
+    
+            Authorization: Bearer JWT
+            
+    + Attributes
+        + identifier: `A` (string, optional)
+        + greeting: `Updated greeting - A day` (string, optional)
+
++ Response 200 (application/json)
+
+    + Attributes (Day State)
+
+### Get the current day state [GET /orgs/{org_id}/daystates/current]
+
+Returns the current day state, this will change on a day by day basis.
+
++ Request 
+
+    + Header
+    
+            Authorization: Bearer JWT
+            
++ Response 200 (application/json)
+
+    + Attributes (Day State)
+    
++ Response 404 (application/json)
+
+    This occurs when an org has no rules defined for day states (or no day states to begin with).
+    
+    + Body
+
 ## User [/users]
 
 + Attributes
@@ -326,3 +408,7 @@ Creates a request to borrow a pass on behalf of the user for every day in the da
 ## Date Selection (enum)
 + (Date)
 + (Date Range)
+
+## Day State Create (object)
++ identifier: M (string) - A recognizable short name / character for the state
++ greeting: `Today is a Monday` (string) - The greeting used to inform clients of the state of the current day.
