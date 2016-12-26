@@ -209,7 +209,8 @@ def me():
                           for org in user.participates ],
         'moderates': [ {'id': org.id, 'name': org.name}
                        for org in user.moderates ],
-        'passes': pass_util.get_user_passes(user_id)
+        'passes': [pass_util.pass_dict(pas)
+                   for pas in pass_util.query_user_passes(db.session, user_id)]
 
     }), 200
 
@@ -228,8 +229,10 @@ def user_is_mod(user_id, org_id):
 @app.route('/me/passes')
 @jwt_required
 def me_passes():
+    user_id = get_jwt_identity()
     return jsonify({
-        'passes': pass_util.get_user_passes(get_jwt_identity())
+        'passes': [pass_util.pass_dict(pas)
+                   for pas in pass_util.query_user_passes(db.session, user_id)]
     }), 200
 
 # Give the user a new pass (or at least request one).
