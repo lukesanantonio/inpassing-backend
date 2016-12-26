@@ -5,8 +5,8 @@ from flask import request, jsonify
 
 from . import pass_util
 from .app import app
-from .models import Org, User, Pass, db
 
+from .models import Org, User, Pass, Daystate, db
 from .util import jwt_optional, range_inclusive_dates
 
 import datetime
@@ -32,6 +32,54 @@ live_orgs = {}
 def user_identity(ident):
     # The user is identified with their ID.
     return ident.id
+
+# Orgs
+
+@app.route('/orgs', methods=['POST'])
+@jwt_required
+def create_org():
+    name = request.get_json().get('name', None)
+    if name == None:
+        return jsonify({
+            'msg': 'missing org name'
+        }), 422
+
+    org = Org(name=name)
+    db.session.add(org)
+
+    # Make this user a moderator
+    user = db.session.query(User).filter_by(id=get_jwt_identity()).first()
+    org.mods.append(user)
+    db.session.commit()
+
+    return app.make_response(('', 201, {
+        'Location': flask.url_for('orgs_query', org.id)
+    }))
+
+@app.route('/orgs/<org_id>')
+@jwt_optional
+def orgs_query(org_id):
+    # Find the org by id
+    org = db.session.query(Org).filter_by(id=org_id).first()
+
+    if org is None:
+        return jsonify({
+            'msg': 'org not found'
+        }), 404
+
+    # Include basic information for all users
+    ret = {
+        'id': org.id,
+        'name': org.name
+    }
+
+    return jsonify(ret), 200
+
+@app.route('/orgs/search')
+def orgs_search():
+    query = request.args.get('q') or ''
+    orgs = db.session.query(Org).filter(Org.name.like('%' + query + '%')).all()
+    return jsonify([{'id': org.id, 'name': org.name } for org in orgs]), 200
 
 @app.route('/user/signup', methods=['POST'])
 def user_signup():
@@ -134,64 +182,6 @@ def me_passes():
         'passes': pass_util.get_user_passes(get_jwt_identity())
     }), 200
 
-@app.route('/org', methods=['POST'])
-@jwt_required
-def org_create():
-    name = request.form.get('name')
-    if name == None:
-        return jsonify({
-            'msg': 'missing org name'
-        }), 422
-
-    org = Org(name=name)
-    db.session.add(org)
-
-    # Make this user a moderator
-    user = db.session.query(User).filter_by(id=get_jwt_identity()).first()
-    org.mods.append(user)
-    db.session.commit()
-
-    return jsonify({
-        'msg': 'success',
-        'org_id': org.id
-    }), 200
-
-@app.route('/org/<org_id>')
-@jwt_optional
-def org_get(org_id):
-    # Find the org by id
-    org = db.session.query(Org).filter_by(id=org_id).first()
-
-    if org is None:
-        return jsonify({
-            'msg': 'org not found'
-        }), 404
-
-    # Include basic information for all users
-    ret = {
-        'id': org.id,
-        'name': org.name
-    }
-
-    # See if we are being accessed by a user who participates or moderates this
-    # organization. We could technically store this information in the access
-    # token, but its more straightforward if we just do it this way.
-    user = db.session.query(User).filter_by(id=get_jwt_identity()).first()
-
-    if user:
-        if org in user.participates:
-            # The user will need this.
-            ret.update({
-                'day_state_greeting_fmt': org.day_state_greeting_fmt or '',
-                'parking_rules': json.loads(org.parking_rules or '{}'),
-            })
-        if org in user.moderates:
-            ret.update({
-                'unverified_passes': pass_util.get_org_unverified_passes(org.id)
-            })
-
-    return jsonify(ret), 200
-
 # Give the user a new pass (or at least request one).
 @app.route('/org/<org_id>/pass', methods=['POST'])
 @jwt_required
@@ -272,17 +262,6 @@ def org_verify_pass(org_id):
     return jsonify({
         'msg': 'success'
     }), 200
-
-@app.route('/org/search')
-def org_search():
-    query = request.args.get('q')
-    if query == None:
-        return jsonify({
-            'msg': 'no query string'
-        }), 422
-
-    orgs = db.session.query(Org).filter(Org.name.like('%' + query + '%')).all()
-    return jsonify([{'id': org.id, 'name': org.name } for org in orgs]), 200
 
 class MissingDateError(Exception):
     def __str__(self):
