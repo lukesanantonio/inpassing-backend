@@ -212,6 +212,22 @@ def org_daystates_query(org_id, daystate_id):
     # If they made it this far they are allowed to see the day state.
     return jsonify(util.daystate_dict(daystate)), 200
 
+@app.route('/orgs/<org_id>/daystates/current')
+@jwt_required
+def org_daystates_current(org_id):
+
+    user_id = get_jwt_identity()
+    if not (user_is_participant(user_id, org_id) or
+            user_is_mod(user_id, org_id)):
+        return jsonify({
+            'msg': 'user {} must mod or participate in org {}'.format(
+                user_id, org_id
+            )
+        }), 403
+
+    # TODO: Tie this into the live org / worker implementation somehow!
+    daystate = Daystate.query.filter_by(org_id=org_id).first()
+    return jsonify(util.daystate_dict(daystate)), 200
 @app.route('/user/signup', methods=['POST'])
 def user_signup():
     first_name = request.form.get('first_name')
