@@ -81,6 +81,56 @@ def orgs_search():
     orgs = db.session.query(Org).filter(Org.name.like('%' + query + '%')).all()
     return jsonify([{'id': org.id, 'name': org.name } for org in orgs]), 200
 
+# Day states
+
+@app.route('/orgs/<org_id>/daystates', methods=['GET', 'POST'])
+def org_daystates(org_id):
+
+    # Check to see if the org exists
+    org_q = db.session.query(Org).filter_by(id=org_id)
+    (org_exists,) = db.session.query(org_q.exists()).first()
+
+    if not org_exists:
+        return jsonify({
+            'msg': 'org not found'
+        }), 404
+
+    if request.method == 'POST':
+        # Post a new day state
+        data = request.get_json()
+
+        if 'identifier' not in data:
+            return jsonify({
+                'msg': 'missing daystate identifier'
+            }), 422
+
+        if 'greeting' not in data:
+            return jsonify({
+                'msg': 'missing daystate greeting'
+            }), 422
+
+        daystate = Daystate(org_id = org_id,
+                            identifier = data['identifier'],
+                            greeting = data['greeting'])
+        db.session.add(daystate)
+        db.session.commit()
+
+        # Return the state location
+        return app.make_response(('', 201, {
+            'Location': flask.url_for('org_daystates_query', org_id,
+                                      daystate.id)
+        }))
+    else:
+        # Query org day states by org id
+        daystates = Daystate.query.filter_by(org_id=org_id).all()
+
+        return jsonify([{
+            'id': state.id,
+            'org_id': state.org_id,
+            'identifier': state.identifier,
+            'greeting': state.greeting
+        } for state in daystates]), 200
+
 @app.route('/user/signup', methods=['POST'])
 def user_signup():
     first_name = request.form.get('first_name')
