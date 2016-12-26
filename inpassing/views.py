@@ -96,6 +96,7 @@ def orgs_search():
 # Day states
 
 @app.route('/orgs/<org_id>/daystates', methods=['GET', 'POST'])
+@jwt_required
 def org_daystates(org_id):
 
     # Check to see if the org exists
@@ -107,7 +108,14 @@ def org_daystates(org_id):
             'msg': 'org not found'
         }), 404
 
+    user_id = get_jwt_identity()
     if request.method == 'POST':
+        # The user must be a mod
+        if not user_is_mod(user_id, org_id):
+            return jsonify({
+                'msg': 'user {} must mod org {}'.format(user_id, org_id)
+            }), 403
+
         # Post a new day state
         data = request.get_json()
 
@@ -133,6 +141,14 @@ def org_daystates(org_id):
                                       daystate.id)
         }))
     else:
+        # The user must be a participant or mod.
+        if not (user_is_mod(user_id, org_id) or
+                user_is_participant(user_id, org_id)):
+            return jsonify({
+                'msg': ('user {} not allowed to query daystates for org {}'
+                        .format(user_id, org_id))
+            }), 403
+
         # Query org day states by org id
         daystates = Daystate.query.filter_by(org_id=org_id).all()
 
