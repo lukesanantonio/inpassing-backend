@@ -201,9 +201,10 @@ def org_daystates_query(org_id, daystate_id):
         # If the user is trying to get info about this game state they must be a
         # participant.
 
-        if not user_is_participant(user_id, org_id):
+        if not (user_is_participant(user_id, org_id) or
+                user_is_mod(user_id, org_id)):
             return jsonify({
-                'msg': 'user {} must participate in org {}'.format(
+                'msg': 'user {} must mod or participate in org {}'.format(
                     user_id, org_id
                 )
             }), 403
