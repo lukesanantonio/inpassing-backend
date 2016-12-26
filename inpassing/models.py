@@ -47,7 +47,7 @@ class Org(db.Model):
 
     ## Relationships
     # An org has a finite set of day states.
-    parking_states = db.relationship('DayState', backref='org')
+    parking_states = db.relationship('Daystate', backref='org')
 
     # Orgs have participants, but don't load them all at once.
     participants = db.relationship('User',
@@ -65,15 +65,17 @@ class Org(db.Model):
 # example, in an A-B system, there will be two states, one for A and one for B.
 # The IDs will probably be 0 and 1 while the string fields would be A and B,
 # respectively.
-class DayState(db.Model):
+class Daystate(db.Model):
     __tablename__ = 'daystates'
 
     # A day state has an id,
     id = db.Column(db.Integer, primary_key=True)
     # an organization that it is relevant belongs to,
     org_id = db.Column(db.Integer, db.ForeignKey('orgs.id'))
-    # and a string representation.
-    string = db.Column(db.String(50))
+    # a short string representation,
+    identifier = db.Column(db.String(50))
+    # and a long one.
+    greeting = db.Column(db.String(200))
 
 class User(db.Model):
     __tablename__ = 'users'
