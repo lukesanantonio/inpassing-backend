@@ -7,6 +7,8 @@ from . import pass_util
 from .app import app
 
 from .models import Org, User, Pass, Daystate, db
+
+from . import util
 from .util import jwt_optional, range_inclusive_dates
 
 import datetime
@@ -158,6 +160,56 @@ def org_daystates(org_id):
             'identifier': state.identifier,
             'greeting': state.greeting
         } for state in daystates]), 200
+
+# Technically, daystates are separate from orgs, but we want the client to know
+# what org a given day state ID applies for. That is to say that all daystates
+# will have unique IDs.
+@app.route('/orgs/<org_id>/daystates/<daystate_id>', methods=['GET', 'PUT'])
+@jwt_required
+def org_daystates_query(org_id, daystate_id):
+
+    # Find the day state in question
+    daystate = Daystate.query.filter_by(id=daystate_id, org_id=org_id).first()
+
+    # Is it valid?
+    if daystate == None:
+        return jsonify({
+            'msg': 'daystate not found'
+        }), 404
+
+    user_id = get_jwt_identity()
+    if request.method == 'PUT':
+
+        # Make sure the user is mod
+        if not user_is_mod(user_id, org_id):
+            return jsonify({
+                'msg': 'user {} must moderate org {}'.format(user_id, org_id)
+            }), 403
+
+        js = request.get_json()
+        new_identifier = js.get('identifier')
+        new_greeting = js.get('greeting')
+
+        if new_identifier:
+            daystate.identifier = new_identifier
+        if new_greeting:
+            daystate.greeting = new_greeting
+
+        db.session.commit()
+
+    else:
+        # If the user is trying to get info about this game state they must be a
+        # participant.
+
+        if not user_is_participant(user_id, org_id):
+            return jsonify({
+                'msg': 'user {} must participate in org {}'.format(
+                    user_id, org_id
+                )
+            }), 403
+
+    # If they made it this far they are allowed to see the day state.
+    return jsonify(util.daystate_dict(daystate)), 200
 
 @app.route('/user/signup', methods=['POST'])
 def user_signup():
