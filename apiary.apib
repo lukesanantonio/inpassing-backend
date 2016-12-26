@@ -5,6 +5,8 @@ HOST: http://polls.apiblueprint.org/
 
 A web API for managing the lending and borrowing of passes.
 
+## Group Orgs
+
 ## Org [/orgs]
 
 + Attribute
@@ -68,7 +70,140 @@ A web API for managing the lending and borrowing of passes.
 
     + Attributes (Org)
         + greeting_fmt: `Today is a {} day` (string) - The greeting format
+        
+    
+## Org Participant collection [/orgs/{id}/participants]
 
+### Query participants [GET]
+
+Returns a list of participants of a given org.
+
++ Request
+
+    + Headers
+    
+            Authorization: Bearer JWT
+            
++ Response 200 (application/json)
+    
+    + Attributes (array[User])
+
++ Response 403
+
+    The authenticated user must be a mod of this organization.
+
+    + Body
+
+### Add user [POST]
+
+Makes a user a participant of an org. This must either be a user adding itself or a mod adding people.
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Bearer JWT
+            
+    + Attributes
+        + user_id: 2 (number) - The user to make a participant of this organization.
+        
++ Response 202 (application/json)
+
+    The org will receive the users request to participate in an org.
+    
+    + Body
+
++ Response 204 (application/json)
+
+    The user submitted is now a participant of this org.
+    
+    + Header
+    
+            Location: /orgs/2/participants/2
+
+### Query user [GET /orgs/{org_id}/participants/{user_id}]
+
+Returns the user object of an org participant.
+
++ Request
+
+    + Headers
+    
+            Authorization: Bearer JWT
+
++ Response 200 (application/json)
+
+    + Attributes (User)
+
++ Response 404 (application/json)
+
+    The user may not exist, or the authenticated user may not have permission to view it.
+    
+    + Body
+
+## Org Moderator collection [/orgs/{id}/moderators]
+
+### Query moderators [GET]
+
+Returns a list of moderators of a given org.
+
++ Request
+
+    + Headers
+    
+            Authorization: Bearer JWT
+            
++ Response 200 (application/json)
+    
+    + Attributes (array[User])
+
++ Response 403
+
+    The authenticated user must be a mod of this organization.
+
+    + Body
+
+### Add user [POST]
+
+Makes a user a mod of an org. The authenticated user must be a moderator itself.
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Bearer JWT
+            
+    + Attributes
+        + user_id: 2 (number) - The user to make a moderator of this organization.
+
++ Response 204 (application/json)
+
+    The user submitted is now a moderator of this org.
+    
+    + Header
+    
+            Location: /orgs/2/moderators/2
+
+### Query user [GET /orgs/{org_id}/moderators/{user_id}]
+
+Returns the user object of an org moderator.
+
++ Request
+
+    + Headers
+    
+            Authorization: Bearer JWT
+            
++ Response 200 (application/json)
+
+    + Attributes (User)
+
++ Response 404 (application/json)
+
+    The user may not exist, or the authenticated user may not have permission to view it.
+    
+    + Body
+    
 ## Day State [/orgs/{org_id}/daystates]
 
 + Attributes
@@ -163,6 +298,8 @@ Returns the current day state, this will change on a day by day basis.
     This occurs when an org has no rules defined for day states (or no day states to begin with).
     
     + Body
+
+## Group Users
 
 ## User [/users]
 
@@ -300,6 +437,8 @@ Removes a request to borrow a pass on behalf of the authenticated user in a give
 
 + Response 204
 
+
+## Group Passes
 
 ## Pass [/passes{?org_id,user_id,verified}]
 
