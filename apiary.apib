@@ -51,7 +51,7 @@ A web API for managing the lending and borrowing of passes.
 + Request Anonymous
 
     Without authentication, only basic information about an org will be returned.
-    
+
     + Body
 
 + Response 200 (application/json)
@@ -63,9 +63,9 @@ A web API for managing the lending and borrowing of passes.
     Use authentication to get more information about an org relevant to the user's role in that org.
 
     + Header
-    
+
             Authorization: Bearer JWT
-            
+
 + Response 200 (application/json)
 
     + Attributes (Org)
@@ -222,9 +222,9 @@ Return information about an org day state.
     The authenticated user must be a participant or moderator of the org to query states.
 
     + Header
-    
+
             Authorization: Bearer JWT
-            
+
 + Response 200 (application/json)
     + Attributes (array[Day State])
 
@@ -240,11 +240,11 @@ Creates a new day state associated with a given organization.
     The authenticated user must moderate the org
 
     + Header
-    
+
             Authorization: Bearer JWT
-            
+
     + Attributes (Day State Create)
-            
+
 + Response 201 (application/json)
     + Attributes (Day State)
 
@@ -255,9 +255,9 @@ Returns a particular day state object.
 + Request
 
     + Header
-    
+
             Authorization: Bearer JWT
-            
+
 + Response 200 (application/json)
     + Attributes (Day State)
 
@@ -268,9 +268,9 @@ Changes the identifier and/or greeting of a day state.
 + Request (application/json)
 
     + Header
-    
+
             Authorization: Bearer JWT
-            
+
     + Attributes
         + identifier: `A` (string, optional)
         + greeting: `Updated greeting - A day` (string, optional)
@@ -283,20 +283,20 @@ Changes the identifier and/or greeting of a day state.
 
 Returns the current day state, this will change on a day by day basis.
 
-+ Request 
++ Request
 
     + Header
-    
+
             Authorization: Bearer JWT
-            
+
 + Response 200 (application/json)
 
     + Attributes (Day State)
-    
+
 + Response 404 (application/json)
 
     This occurs when an org has no rules defined for day states (or no day states to begin with).
-    
+
     + Body
 
 ## Group Users
@@ -466,9 +466,9 @@ If the user is the mod of an org, all org passes are available to filter.
 + Request (application/json)
 
     + Header
-    
+
             Authentication: Bearer JWT
-        
+
 + Response 200 (application/json)
 
     + Attributes (array[Pass])
@@ -479,29 +479,29 @@ If the user is the mod of an org, all org passes are available to filter.
 Requests a new pass from an Org on behalf of the authenticated user.
 
 + Request (application/json)
-    
+
     + Header
-        
+
             Authentication: Bearer JWT
-            
+
     + Attributes
         + org_id: 2 (number) - The Org that the pass is to be requested from
         + state_id: 1 (number) - The requested day state of the pass
         + spot_num: 25 (number) - The requested spot number
-            
+
 + Response 201 (application/json)
 
     Note that although the pass object exists, the org will still need to verify it for it to be useful.
 
     + Header
-            
+
             Location: /passes/2
-            
+
     + Attributes (Pass)
         + assigned_time - null
         + assigned_state_id - null
         + assigned_spot_num - null
-            
+
 ### Query pass [GET /passes/{id}]
 
 Get specific pass object
@@ -515,13 +515,13 @@ Get specific pass object
 + Response 200 (application/json)
 
     + Attributes (Pass)
-            
+
 + Response 403 (application/json)
-    
+
     You can only query passes that you would have access to either as an org moderator or a user!
-    
+
     + Body
-    
+
             {
                 "msg": "not authenticated to view this pass",
                 "error_code": "foreign_pass"
@@ -534,9 +534,9 @@ Deletes a pass.
 + Request
 
     + Header
-            
+
             Authorization: Bearer JWT
-            
+
 + Response 202
 
 ### Assign pass [PUT /passes/{id}]
@@ -547,13 +547,13 @@ Any changes to the pass resulting from this call will result in `assigned_time` 
 + Request
 
     + Header
-    
+
             Authorization: Bearer JWT
-            
+
     + Attributes
         + state_id (number, optional) - The new state of the pass
         + spot_num (number, optional) - The new spot number of the pass
-            
+
 + Response 200 (application/json)
     + Attributes (Pass)
 
@@ -572,9 +572,9 @@ but it is not an error to include these days in the date range.
     + Header
 
             Authentication: Bearer JWT
-            
+
     + Attributes (Date Selection)
-            
+
 + Response 204
 
 ### Stop lending a pass [POST /passes/{pass_id}/unlend]
@@ -589,9 +589,9 @@ Removes a request to lend a pass on behalf of the user in the given date range.
     + Header
 
             Authentication: Bearer JWT
-            
+
     + Attributes (Date Selection)
-            
+
 + Response 204
 
 # Data Structures
@@ -609,4 +609,5 @@ Removes a request to lend a pass on behalf of the user in the given date range.
 
 ## Day State Create (object)
 + identifier: M (string) - A recognizable short name / character for the state
-+ greeting: `Today is a Monday` (string) - The greeting used to inform clients of the state of the current day.
++ greeting: `Today is a Monday` (string) - The greeting used to inform clients
+  of the state of the current day.
