@@ -15,7 +15,15 @@ A web API for managing the lending and borrowing of passes.
 
 ### Create a new org [POST]
 
+Create a new Org. The authenticated user will become a moderator.
+
 + Request (application/json)
+
+    + Headers
+
+        Authorization: Bearer JWT
+
+    + Body
 
         {
             "name": "Locust Valley High School"
