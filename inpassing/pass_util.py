@@ -8,6 +8,19 @@ from datetime import date, timedelta
 
 from .util import range_inclusive_dates
 
+def pass_dict(p):
+    return {
+        'id': p.id,
+        'org_id': p.org_id,
+        'owner_id': p.owner_id,
+        'request_time': p.request_time,
+        'requested_state_id': p.requested_state_id,
+        'requested_spot_num': p.requested_spot_num,
+        'assigned_time': p.assigned_time,
+        'assigned_state_id': p.assigned_state_id,
+        'assigned_spot_num': p.assigned_spot_num,
+    }
+
 def get_user_passes(user_id):
     """Returns all owned, borrowed and requested passes of a user."""
 
