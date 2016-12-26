@@ -21,6 +21,36 @@ def pass_dict(p):
         'assigned_spot_num': p.assigned_spot_num,
     }
 
+def query_user_passes(session, user_id, verified=None):
+    if verified == True:
+        # Only verified passes
+        return session.query(Pass).filter(
+            and_(Pass.owner_id == user_id, Pass.assigned_time != None)
+        ).all()
+    elif verified == False:
+        # Only non-verified passes
+        return session.query(Pass).filter(
+            and_(Pass.owner_id == user_id, Pass.assigned_time == None)
+        ).all()
+    else:
+        # All passes
+        return session.query(Pass).filter(Pass.owner_id == user_id).all()
+
+def query_org_passes(session, org_id, verified=None):
+    if verified == True:
+        # Only verified passes
+        return session.query(Pass).filter(
+            and_(Pass.org_id == org_id, Pass.assigned_time != None)
+        ).all()
+    elif verified == False:
+        # Only non-verified passes
+        return session.query(Pass).filter(
+            and_(Pass.org_id == org_id, Pass.assigned_time == None)
+        ).all()
+    else:
+        # All passes
+        return session.query(Pass).filter(Pass.org_id == org_id).all()
+
 def get_user_passes(user_id):
     """Returns all owned, borrowed and requested passes of a user."""
 
