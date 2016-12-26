@@ -386,13 +386,18 @@ def borrow_pass():
 @app.route('/pass/<pass_id>/lend', methods=['POST'])
 @jwt_required
 def lend_pass(pass_id):
-    # Make sure we were given a valid pass
-
     pass_obj = db.session.query(Pass).filter_by(id=pass_id).first()
     if pass_obj == None:
         return jsonify({
             'msg': "pass {} doesn't exist".format(pass_id)
         }), 404
+
+    user_id = get_jwt_identity()
+    if pass_obj.owner_id != user_id:
+        # The user doesn't own this pass!
+        return jsonify({
+            'msg': 'pass {} not owned by user {}'.format(pass_id, user_id)
+        }), 403
 
     try:
         start_date, end_date = get_date_pair(request.form.get('date'),
