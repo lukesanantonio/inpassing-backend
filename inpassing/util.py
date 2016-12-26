@@ -36,3 +36,11 @@ def range_inclusive_dates(start, end):
     date_range = end - start
     for day_i in range(date_range.days + 1):
         yield start + timedelta(days=day_i)
+
+def daystate_dict(daystate):
+    return {
+        'id': daystate.id,
+        'org_id': daystate.org_id,
+        'identifier': daystate.identifer,
+        'greeting': daystate.greeting
+    }
