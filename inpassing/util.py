@@ -7,6 +7,7 @@ from flask_jwt_extended.utils import ctx_stack
 from flask_jwt_extended.exceptions import NoAuthorizationError
 
 from datetime import timedelta
+from . import pass_util
 
 def jwt_optional(fn):
     @wraps(fn)
@@ -43,4 +44,16 @@ def daystate_dict(daystate):
         'org_id': daystate.org_id,
         'identifier': daystate.identifer,
         'greeting': daystate.greeting
+    }
+
+def user_dict(user):
+    return {
+        'id': user_id,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'email': user.email,
+        'participates': [ {'id': org.id, 'name': org.name}
+                          for org in user.participates ],
+        'moderates': [ {'id': org.id, 'name': org.name}
+                       for org in user.moderates ]
     }

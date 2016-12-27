@@ -297,19 +297,12 @@ def me():
     user_id = get_jwt_identity()
     user = db.session.query(User).filter_by(id=user_id).first()
 
-    return jsonify({
-        'id': user_id,
-        'first_name': user.first_name,
-        'last_name': user.last_name,
-        'email': user.email,
-        'participates': [ {'id': org.id, 'name': org.name}
-                          for org in user.participates ],
-        'moderates': [ {'id': org.id, 'name': org.name}
-                       for org in user.moderates ],
-        'passes': [pass_util.pass_dict(pas)
-                   for pas in pass_util.query_user_passes(db.session, user_id)]
-
-    }), 200
+    user_obj = util.user_dict(user)
+    user_obj['passes'] = [
+        pass_util.pass_dict(pas)
+        for pas in pass_util.query_user_passes(db.session, user_id)
+    ]
+    return jsonify(user_obj), 200
 
 @app.route('/me/passes')
 @jwt_required
