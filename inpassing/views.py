@@ -531,6 +531,12 @@ def me_passes():
 def me_request_pass(org_id):
     user_id = get_jwt_identity()
 
+    # Make sure the user is allowed to participate
+    if not user_is_participant(user_id, org_id):
+        return jsonify({
+            'msg': 'user {} must participate in org {}'.format(user_id, org_id)
+        }), 403
+
     state_id = request.form.get('state_id')
     spot_num = request.form.get('spot_num')
 
