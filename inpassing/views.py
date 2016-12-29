@@ -299,7 +299,7 @@ def org_moderators_query(org_id, user_id):
         }), 403
 
     # Does the given user moderate?
-    user = User.query.filter_by(user_id).first()
+    user = User.query.filter_by(id=user_id).first()
 
     if user in org.mods:
         return jsonify(util.user_dict(user)), 200
