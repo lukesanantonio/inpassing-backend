@@ -488,8 +488,8 @@ def user_signup():
 # Idea: Add anonymous auth @ GET /auth/anon.jwt or something
 @app.route('/user/auth', methods=['POST'])
 def auth_user():
-    in_email = request.form.get('email', '')
-    in_passwd = request.form.get('password', '')
+    in_email = request.get_json().get('email', '')
+    in_passwd = request.get_json().get('password', '')
 
     user = db.session.query(User).filter_by(email=in_email).first()
 
