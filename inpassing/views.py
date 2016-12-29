@@ -281,6 +281,7 @@ def org_moderators(org_id):
         ]), 200
 
 @app.route('/orgs/<org_id>/moderators/<user_id>')
+@jwt_required
 def org_moderators_query(org_id, user_id):
     # Find the org in question
     org = Org.query.filter_by(id=org_id).first()
