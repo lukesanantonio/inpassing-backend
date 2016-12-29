@@ -1,7 +1,7 @@
 # Copyright (c) 2016 Luke San Antonio Bialecki
 # All rights reserved.
 
-from flask import request, jsonify
+from flask import request, jsonify, url_for
 
 from . import pass_util
 from .app import app
@@ -67,7 +67,7 @@ def create_org():
     db.session.commit()
 
     return app.make_response(('', 201, {
-        'Location': flask.url_for('orgs_query', org.id)
+        'Location': url_for('orgs_query', org_id=org.id)
     }))
 
 @app.route('/orgs/<org_id>')
@@ -351,8 +351,8 @@ def org_daystates(org_id):
 
         # Return the state location
         return app.make_response(('', 201, {
-            'Location': flask.url_for('org_daystates_query', org_id,
-                                      daystate.id)
+            'Location': url_for('org_daystates_query', org_id=org_id,
+                                daystate_id=daystate.id)
         }))
     else:
         # The user must be a participant or mod.
