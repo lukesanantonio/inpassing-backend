@@ -89,7 +89,7 @@ class User(db.Model):
     first_name = db.Column(db.String(100))
     last_name = db.Column(db.String(200))
     email = db.Column(db.String(255))
-    password = db.Column(db.String(255))
+    password = db.Column(db.LargeBinary(60))
 
     transfer_token = db.Column(db.Integer, default=0)
 
