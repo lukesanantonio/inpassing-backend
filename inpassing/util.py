@@ -48,7 +48,7 @@ def daystate_dict(daystate):
 
 def user_dict(user):
     return {
-        'id': user_id,
+        'id': user.id,
         'first_name': user.first_name,
         'last_name': user.last_name,
         'email': user.email,
