@@ -517,14 +517,82 @@ def me():
     ]
     return jsonify(user_obj), 200
 
-@app.route('/me/passes')
+
+class MissingDateError(Exception):
+    def __str__(self):
+        return 'must provide date *or* start_date and end_date'
+
+class EndDateTooEarlyError(Exception):
+    def __str__(self):
+        return 'start_date must come before end_date'
+
+def get_date_pair(date_in, start_date_in, end_date_in):
+    start_date = None
+    end_date = None
+
+    if date_in != None:
+        date = datetime.strptime(date_in, DATE_FMT)
+        start_date = date
+        end_date = date
+    else:
+        if start_date_in == None or end_date_in == None:
+            raise MissingDateError
+        else:
+            start_date = datetime.strptime(start_date_in, DATE_FMT)
+            end_date = datetime.strptime(end_date_in, DATE_FMT)
+
+    if end_date < start_date:
+        raise EndDateTooEarlyError
+
+    return start_date, end_date
+
+def get_live_org(org_id):
+    if org_id not in live_orgs:
+        live_orgs[org_id] = LiveOrg(redis, org_id)
+
+    return live_orgs[org_id]
+
+@app.route('/me/borrow', methods=['POST'])
 @jwt_required
-def me_passes():
-    user_id = get_jwt_identity()
-    return jsonify({
-        'passes': [util.pass_dict(pas)
-                   for pas in pass_util.query_user_passes(db.session, user_id)]
-    }), 200
+def me_borrow():
+    user_obj = db.session.query(User).filter_by(id=get_jwt_identity()).first()
+    if user_obj == None:
+        return jsonify({
+            'msg': "user {} doesn't exist, this is really bad".format(pass_id)
+        }), 404
+
+    # Make sure we were also given an org id.
+    org_id = request.form.get('org_id')
+    if org_id == None:
+        return jsonify({
+            'msg': 'missing org'
+        }), 422
+
+    try:
+        start_date, end_date = get_date_pair(request.form.get('date'),
+                                             request.form.get('start_date'),
+                                             request.form.get('end_date'))
+    except (MissingDateError, EndDateTooEarlyError) as e:
+        return jsonify({
+            'msg': str(e)
+        }), 422
+
+    live_org = get_live_org(org_id)
+
+    ret_obj = {}
+    for date in range_inclusive_dates(start_date, end_date):
+        enqueued = live_org.enqueue_user_borrow(date, user_obj.id)
+        ret_obj[date.strftime(DATE_FMT)] = {
+            'enqueued': enqueued
+        }
+
+    return jsonify(ret_obj), 200
+
+
+@app.route('/me/unborrow')
+@jwt_required
+def me_unborrow():
+    pass
 
 # Give the user a new pass (or at least request one).
 @app.route('/org/<org_id>/pass', methods=['POST'])
@@ -569,9 +637,9 @@ def me_request_pass(org_id):
     }), 200
 
 # Add this so that we can do this live with AJAX or something
-@app.route('/org/<org_id>/unverified_passes')
+@app.route('/org/<org_id>/passes')
 @jwt_required
-def org_unverified_passes(org_id):
+def org_passes(org_id):
     user = db.session.query(User).filter_by(id=get_jwt_identity()).first()
 
     # Is there any way to avoid this query in order to check if a user is a mod?
@@ -586,102 +654,50 @@ def org_unverified_passes(org_id):
         'passes': [util.pass_dict(p) for p in passes]
     }), 200
 
-@app.route('/org/<org_id>/assign_pass', methods=['POST'])
+@app.route('/org/<org_id>/pass/<pass_id>')
 @jwt_required
-def org_verify_pass(org_id):
-    pass_id = request.form.get('pass_id')
-    if pass_id == None:
-        return jsonify({
-            'msg': 'missing pass_id'
-        }), 422
+def org_pass_get(org_id, pass_id):
+    # TODO: Some way to make sure the user is a mod.
+    p = db.session.query(Pass).filter(
+        and_(Pass.id == pass_id, Pass.org_id == org_id)
+    ).first()
 
-    state_id = request.form.get('state_id')
-    spot_num = request.form.get('spot_num')
+    if p == None:
+        return jsonify('nonexistent pass {}'.format(pass_id)), 404
 
-    p = db.session.query(Pass).filter_by(id=pass_id).first()
+    return jsonify({
+        'pass': util.pass_dict(p)
+    }), 200
+
+
+@app.route('/org/<org_id>/pass/<pass_id>/assign', methods=['PUT'])
+@jwt_required
+def org_pass_assign(org_id, pass_id):
+    # Find the pass
+    p = db.session.query(Pass).filter(
+        and_(Pass.id == pass_id, Pass.org_id == org_id)
+    ).first()
+
     if p == None:
         return jsonify({
             'msg': 'nonexistent pass {}'.format(pass_id)
         }), 422
 
+    user_id = get_jwt_identity()
+    if p.owner_id != user_id:
+        return jsonify({
+            'msg': 'pass {} not owned by user {}'.format(pass_id, user_id)
+        }), 403
+
     p.assigned_time = datetime.now()
-    p.assigned_state_id = state_id or p.requested_state_id
-    p.assigned_spot_num = spot_num or p.requested_spot_num
+    p.assigned_state_id = request.form.get('state_id', p.requested_state_id)
+    p.assigned_spot_num = request.form.get('spot_nyum', p.requested_spot_num)
     db.session.commit()
 
     return jsonify({
-        'msg': 'success'
+        'msg': 'success',
+        'pass': util.pass_dict(p),
     }), 200
-
-class MissingDateError(Exception):
-    def __str__(self):
-        return 'must provide date *or* start_date and end_date'
-
-class EndDateTooEarlyError(Exception):
-    def __str__(self):
-        return 'start_date must come before end_date'
-
-def get_date_pair(date_in, start_date_in, end_date_in):
-    start_date = None
-    end_date = None
-
-    if date_in != None:
-        date = datetime.strptime(date_in, DATE_FMT)
-        start_date = date
-        end_date = date
-    else:
-        if start_date_in == None or end_date_in == None:
-            raise MissingDateError
-        else:
-            start_date = datetime.strptime(start_date_in, DATE_FMT)
-            end_date = datetime.strptime(end_date_in, DATE_FMT)
-
-    if end_date < start_date:
-        raise EndDateTooEarlyError
-
-    return start_date, end_date
-
-def get_live_org(org_id):
-    if org_id not in live_orgs:
-        live_orgs[org_id] = LiveOrg(redis, org_id)
-
-    return live_orgs[org_id]
-
-@app.route('/pass/borrow', methods=['POST'])
-@jwt_required
-def borrow_pass():
-    user_obj = db.session.query(User).filter_by(id=get_jwt_identity()).first()
-    if user_obj == None:
-        return jsonify({
-            'msg': "user {} doesn't exist, this is really bad".format(pass_id)
-        }), 404
-
-    # Make sure we were also given an org id.
-    org_id = request.form.get('org_id')
-    if org_id == None:
-        return jsonify({
-            'msg': 'missing org'
-        }), 422
-
-    try:
-        start_date, end_date = get_date_pair(request.form.get('date'),
-                                             request.form.get('start_date'),
-                                             request.form.get('end_date'))
-    except (MissingDateError, EndDateTooEarlyError) as e:
-        return jsonify({
-            'msg': str(e)
-        }), 422
-
-    live_org = get_live_org(org_id)
-
-    ret_obj = {}
-    for date in range_inclusive_dates(start_date, end_date):
-        enqueued = live_org.enqueue_user_borrow(date, user_obj.id)
-        ret_obj[date.strftime(DATE_FMT)] = {
-            'enqueued': enqueued
-        }
-
-    return jsonify(ret_obj), 200
 
 @app.route('/pass/<pass_id>/lend', methods=['POST'])
 @jwt_required
