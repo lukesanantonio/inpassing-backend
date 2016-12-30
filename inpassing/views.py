@@ -444,10 +444,10 @@ def org_daystates_current(org_id):
     return jsonify(util.daystate_dict(daystate)), 200
 @app.route('/user/signup', methods=['POST'])
 def user_signup():
-    first_name = request.form.get('first_name')
-    last_name = request.form.get('last_name')
-    email = request.form.get('email')
-    password = request.form.get('password')
+    first_name = request.get_json().get('first_name')
+    last_name = request.get_json().get('last_name')
+    email = request.get_json().get('email')
+    password = request.get_json().get('password')
 
     err = None
     if first_name is None:
