@@ -61,6 +61,8 @@ class Org(db.Model):
                            back_populates='moderates',
                            lazy='dynamic')
 
+    passes = db.relationship('Pass', backref='org', lazy='dynamic')
+
 # Day states make up the finite set that any given day will be assigned to. For
 # example, in an A-B system, there will be two states, one for A and one for B.
 # The IDs will probably be 0 and 1 while the string fields would be A and B,
