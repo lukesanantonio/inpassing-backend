@@ -583,7 +583,7 @@ def org_unverified_passes(org_id):
         }), 403
 
     return jsonify({
-        'unverified_passes': pass_util.get_org_unverified_passes(org_id)
+        'passes': [pass_util.pass_dict(p) for p in passes]
     }), 200
 
 @app.route('/org/<org_id>/assign_pass', methods=['POST'])
