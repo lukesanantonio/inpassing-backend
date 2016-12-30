@@ -512,7 +512,7 @@ def me():
 
     user_obj = util.user_dict(user)
     user_obj['passes'] = [
-        pass_util.pass_dict(pas)
+        util.pass_dict(pas)
         for pas in pass_util.query_user_passes(db.session, user_id)
     ]
     return jsonify(user_obj), 200
@@ -522,7 +522,7 @@ def me():
 def me_passes():
     user_id = get_jwt_identity()
     return jsonify({
-        'passes': [pass_util.pass_dict(pas)
+        'passes': [util.pass_dict(pas)
                    for pas in pass_util.query_user_passes(db.session, user_id)]
     }), 200
 
@@ -583,7 +583,7 @@ def org_unverified_passes(org_id):
         }), 403
 
     return jsonify({
-        'passes': [pass_util.pass_dict(p) for p in passes]
+        'passes': [util.pass_dict(p) for p in passes]
     }), 200
 
 @app.route('/org/<org_id>/assign_pass', methods=['POST'])
