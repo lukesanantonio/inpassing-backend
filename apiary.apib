@@ -420,35 +420,6 @@ Returns an object describing the authenticated user.
                 ]
             }
 
-### Borrow a pass [POST /me/borrow]
-
-Creates a request to borrow a pass on behalf of the authenticated user for every day in the date range.
-
-+ Request
-
-    + Header
-
-            Authentication: Bearer JWT
-
-    + Attributes (Date Selection)
-
-+ Response 204
-
-### Stop borrowing a pass [POST /me/unborrow]
-
-Removes a request to borrow a pass on behalf of the authenticated user in a given date range.
-
-+ Request
-
-    + Header
-
-            Authentication: Bearer JWT
-
-    + Attributes (Date Selection)
-
-+ Response 204
-
-
 ## Group Passes
 
 ## Pass [/passes{?org_id,user_id,verified}]
@@ -568,6 +539,34 @@ Any changes to the pass resulting from this call will result in `assigned_time` 
 + Response 200 (application/json)
     + Attributes (Pass)
 
+### Borrow a pass [POST /passes/borrow]
+
+Creates a request to borrow a pass on behalf of the authenticated user for every day in the date range.
+
++ Request (application/json)
+
+    + Header
+
+            Authentication: Bearer JWT
+
+    + Attributes (Borrow Data)
+
++ Response 204
+
+### Stop borrowing a pass [POST /passes/unborrow]
+
+Removes a request to borrow a pass on behalf of the authenticated user in a given date range.
+
++ Request (application/json)
+
+    + Header
+
+            Authentication: Bearer JWT
+
+    + Attributes (Borrow Data)
+
++ Response 204
+
 ### Lend a pass [POST /passes/{pass_id}/lend]
 
 Creates a request to lend a pass on behalf of the user for every day in the date range.
@@ -617,6 +616,9 @@ Removes a request to lend a pass on behalf of the user in the given date range.
 ## Date Selection (enum)
 + (Date)
 + (Date Range)
+
+## Borrow Data (Date Selection)
++ org_id: 2 (number) - The org to borrow or unborrow from.
 
 ## Day State Create (object)
 + identifier: M (string) - A recognizable short name / character for the state
