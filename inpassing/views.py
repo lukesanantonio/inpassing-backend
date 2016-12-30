@@ -501,7 +501,7 @@ def auth_user():
         return jsonify(ret), 200
     else:
         # Authentication error
-        return jsonify({'msg': 'bad user credentials'}), 401
+        return jsonify({'msg': 'invalid username or password'}), 401
 
 @app.route('/me')
 @jwt_required
