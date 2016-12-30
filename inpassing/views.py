@@ -442,6 +442,12 @@ def org_daystates_current(org_id):
     # TODO: Tie this into the live org / worker implementation somehow!
     daystate = Daystate.query.filter_by(org_id=org_id).first()
     return jsonify(util.daystate_dict(daystate)), 200
+
+# We would claim the Orgs that a user participates in and mods but that
+# information may change in the future, so we're either gonna have to invalidate
+# the token, ignore the claims in the token and look it up ourselves, or like I
+# don't even know.
+
 @app.route('/user/signup', methods=['POST'])
 def user_signup():
     first_name = request.get_json().get('first_name')
