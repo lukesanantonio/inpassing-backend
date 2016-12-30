@@ -102,7 +102,8 @@ class User(db.Model):
 
     # Passes owned by this user
     passes = db.relationship('Pass', backref='owner',
-                             foreign_keys='Pass.owner_id')
+                             foreign_keys='Pass.owner_id',
+                             lazy='dynamic')
 
 class Pass(db.Model):
     __tablename__ = 'passes'
