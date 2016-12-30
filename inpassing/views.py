@@ -6,6 +6,7 @@ from flask import request, jsonify, url_for
 from . import pass_util
 from .app import app
 
+from . import models
 from .models import Org, User, Pass, Daystate, db
 
 from . import util
