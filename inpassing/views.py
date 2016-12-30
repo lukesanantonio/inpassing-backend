@@ -524,6 +524,49 @@ def me():
     ]
     return jsonify(user_obj), 200
 
+# Passes
+@app.route('/passes')
+@jwt_required
+def passes():
+    user = User.query.filter_by(id=get_jwt_identity()).first()
+
+    # Filter by org
+    filter_org_id = request.args.get('org_id')
+
+    # Filter by user
+    filter_user_id = request.args.get('user_id')
+
+    # Filter by verified or not
+    filter_verified = request.args.get('verified')
+
+    def allow_pass(p):
+        allow = True
+        if filter_org_id is not None:
+            allow = (allow and p.org_id == filter_org_id)
+        if filter_user_id is not None:
+            allow = (allow and p.owner_id == filter_user_id)
+        if filter_verified is not None:
+            if filter_verified:
+                # We're looking for verified passes
+                allow = (allow and p.assigned_time != None)
+            else:
+                # We're looking for unverified passes
+                allow = (allow and p.assigned_time == None)
+
+        return allow
+
+    # Build a dict of all passes this user can access.
+
+    # Passes owned by this user
+    all_passes = user.passes[:]
+
+    for org in user.moderates:
+        # And all passes in all the orgs that this user moderates.
+        all_passes.extend(org.passes[:])
+
+    return jsonify({
+        'passes': [util.pass_dict(p) for p in all_passes if allow_pass(p)]
+    }), 200
 
 class MissingDateError(Exception):
     def __str__(self):
