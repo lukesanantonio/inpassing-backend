@@ -352,7 +352,7 @@ def org_daystates(org_id):
         db.session.commit()
 
         # Return the state location
-        return app.make_response(('', 201, {
+        return current_app.make_response(('', 201, {
             'Location': url_for('org_daystates_query', org_id=org_id,
                                 daystate_id=daystate.id)
         }))
