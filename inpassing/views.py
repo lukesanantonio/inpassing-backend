@@ -637,7 +637,91 @@ def passes():
 @app.route('/passes/<pass_id>', methods=['GET', 'PUT', 'DELETE'])
 @jwt_required
 def passes_query(pass_id):
-    pass
+    # What pass?
+    p = Pass.query.filter_by(id=pass_id).first()
+    if request.method == 'GET':
+        # Make sure the user is allowed to see this pass
+        if (user_is_mod(get_jwt_identity(), p.org_id) or
+            get_jwt_identity() == p.owner_id):
+            # If the user moderates the org which the pass belongs to they are
+            # allowed to see it. They can also just be the owner.
+            return jsonify(util.pass_dict(p)), 200
+        else:
+            return jsonify({
+                'msg': 'not authenticated to view this pass',
+                'error_code': 'foreign_pass'
+            }), 403
+    elif request.method == 'PUT':
+        # Only a mod is allowed to re-assign the pass
+        if user_is_mod(get_jwt_identity(), p.org_id):
+            js_data = request.get_json()
+
+            # Wow, these align so well!
+            new_state_id = js_data.get('state_id')
+            new_spot_num = js_data.get('spot_num')
+            new_owner_id = js_data.get('owner_id')
+
+            modified = False
+
+            if new_state_id is not None:
+                # Make sure this is a valid state id
+                state_q = Daystate.query.filter_by(
+                    id = new_state_id, org_id = p.org_id
+                )
+                (exists,) = db.session.query(state_q.exists()).first()
+                if not exists:
+                    return jsonify({
+                        'msg': 'state {} cannot be assigned to pass {}'.format(
+                            new_state_id, p.id
+                        )
+                    }), 422
+                # Assign the state ID
+                p.assigned_state_id = new_state_id
+                modified = True
+
+            if new_spot_num is not None:
+                p.assigned_spot_num = spot_num
+                modified = True
+            if new_owner_id is not None:
+                p.owner_id = new_owner_id
+                modified = True
+
+            if modified:
+                # Update time and commit!
+                p.assigned_time = datetime.datetime.now()
+                db.session.commit()
+
+                return jsonify(util.pass_dict(p)), 200
+            else:
+                return jsonify({
+                    'msg': 'nothing changed'
+                }), 204
+        else:
+            return jsonify({
+                'msg': 'not authenticated to modify this pass',
+            }), 403
+    elif request.method == 'DELETE':
+        # If we are a mod, remove the pass immediately.
+        if user_is_mod(get_jwt_identity(), p.org_id):
+            db.session.remove(p)
+            db.session.commit()
+
+        ###
+        # TODO: Make sure we update queues so that the pass isn't lent out.
+        ###
+
+        # If we are a participant we can only delete our own pass but this will
+        # only remove the association of the user with the pass. This probably
+        # won't break borrowing.
+        if get_jwt_identity() == p.owner_id:
+            # Remove our association
+            p.owner_id = None
+            db.session.commit()
+            return '', 204
+        else:
+            return jsonify({
+                'msg': 'not authorized to remove this pass'
+            }), 403
 
 class MissingDateError(Exception):
     def __str__(self):

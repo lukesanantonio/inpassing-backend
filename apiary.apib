@@ -524,8 +524,9 @@ Deletes a pass.
 
 ### Assign pass [PUT /passes/{id}]
 
-Used to verify passes or re-assign them to different states or spot numbers.
-Any changes to the pass resulting from this call will result in `assigned_time` being updated.
+Used to verify passes or re-assign them to different states or spot numbers (or
+a new owner). Any changes to the pass resulting from this call will result in
+`assigned_time` being updated.
 
 + Request
 
@@ -536,6 +537,7 @@ Any changes to the pass resulting from this call will result in `assigned_time` 
     + Attributes
         + state_id (number, optional) - The new state of the pass
         + spot_num (number, optional) - The new spot number of the pass
+        + owner_id (number, optional) - The new owner of the pass
 
 + Response 200 (application/json)
     + Attributes (Pass)
