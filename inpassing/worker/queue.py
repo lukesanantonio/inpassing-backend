@@ -327,6 +327,18 @@ class LiveOrg:
 
         return self.r.transaction(enqueue, queue, value_from_callable=True)
 
+    def _dequeue_obj(self, queue, obj):
+        """Removes an object from a queue.
+
+        Returns whether or not the object was removed.
+        """
+
+        # TODO: Remove objects with an old token (do this by searching the
+        # list and looking at every obj. We could issue a warning if the token
+        # is different.
+        removed = pipe.lrem(queue, 1, bytes(obj))
+        return True if removed > 0 else False
+
     def enqueue_user_borrow(self, date, user_id):
         # Active the queue if necessary
         self._activate_day_queue(date)
@@ -335,10 +347,24 @@ class LiveOrg:
             self._borrow_queue(date), self.live_obj(ObjType.User, user_id)
         )
 
+    def dequeue_user_borrow(self, date, user_id):
+        # TODO: Deactivate the queue if necessary (if it's empty).
+        # Dequeue the pass from the borrow queue
+        return self._dequeue_obj(
+            self._borrow_queue(date), self.live_obj(ObjType.User, user_id)
+        )
+
     def enqueue_pass_lend(self, date, pass_id):
         # Active the queue if necessary
         self._activate_day_queue(date)
         # Enqueue the pass onto the lend queue
         return self._enqueue_obj(
+            self._lend_queue(date), self.live_obj(ObjType.Pass, pass_id)
+        )
+
+    def dequeue_pass_lend(self, date, pass_id):
+        # TODO: Deactivate the queue if necessary (if it's empty).
+        # Dequeue the pass from the lend queue
+        return self._dequeue_obj(
             self._lend_queue(date), self.live_obj(ObjType.Pass, pass_id)
         )

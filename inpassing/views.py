@@ -757,67 +757,74 @@ def get_live_org(org_id):
 
     return live_orgs[org_id]
 
-@app.route('/passes/borrow', methods=['POST'])
-@jwt_required
-def borrow_pass():
-    user_obj = db.session.query(User).filter_by(id=get_jwt_identity()).first()
+def do_borrow(user_id, js, action):
+    user_obj = User.query.filter_by(id=user_id).first()
     if user_obj == None:
         return jsonify({
-            'msg': "user {} doesn't exist, this is really bad".format(pass_id)
+            'msg': "user {} doesn't exist, this is really bad".format(user_id)
         }), 404
-
-    js = request.get_json()
 
     # Make sure we were also given an org id.
     org_id = js.get('org_id')
     if org_id == None:
-        return jsonify({
+        return (jsonify({
             'msg': 'missing org'
-        }), 422
+        }), 422), True
 
     try:
         start_date, end_date = get_date_pair(
             js.get('date'), js.get('start_date'), js.get('end_date')
         )
     except (MissingDateError, EndDateTooEarlyError) as e:
-        return jsonify({
+        return (jsonify({
             'msg': str(e)
-        }), 422
+        }), 422), True
 
     live_org = get_live_org(org_id)
+    return action(start_date, end_date, user_obj, live_org)
 
-    ret_obj = {}
-    for date in range_inclusive_dates(start_date, end_date):
-        enqueued = live_org.enqueue_user_borrow(date, user_obj.id)
-        ret_obj[date.strftime(DATE_FMT)] = {
-            'enqueued': enqueued
-        }
+@app.route('/passes/borrow', methods=['POST'])
+@jwt_required
+def borrow_pass():
+    def enqueue(start_date, end_date, user_obj, live_obj):
+        ret_obj = {}
+        for date in range_inclusive_dates(start_date, end_date):
+            enqueued = live_org.enqueue_user_borrow(date, user_obj.id)
+            ret_obj[date.strftime(DATE_FMT)] = {
+                'enqueued': enqueued
+            }
 
-    return jsonify(ret_obj), 200
+        return jsonify(ret_obj), 200
 
+    return do_borrow(get_jwt_identity, request.get_json(), enqueue)
 
 @app.route('/passes/unborrow')
 @jwt_required
 def unborrow_pass():
-    pass
+    def dequeue(start_date, end_date, user_obj, live_obj):
+        ret_obj = {}
+        for date in range_inclusive_dates(start_date, end_date):
+            dequeued = live_org.dequeue_user_borrow(date, user_obj.id)
+            ret_obj[date.strftime(DATE_FMT)] = {
+                'dequeued': dequeued
+            }
 
-@app.route('/passes/<pass_id>/lend', methods=['POST'])
-@jwt_required
-def lend_pass(pass_id):
-    pass_obj = db.session.query(Pass).filter_by(id=pass_id).first()
+        return jsonify(ret_obj), 200
+
+    return do_borrow(get_jwt_identity, request.get_json(), dequeue)
+
+def do_lend(pass_id, user_id, js, action):
+    pass_obj = Pass.query.filter_by(id = pass_id).first()
     if pass_obj == None:
         return jsonify({
             'msg': "pass {} doesn't exist".format(pass_id)
         }), 404
 
-    user_id = get_jwt_identity()
     if pass_obj.owner_id != user_id:
         # The user doesn't own this pass!
         return jsonify({
             'msg': 'pass {} not owned by user {}'.format(pass_id, user_id)
         }), 403
-
-    js = request.get_json()
 
     try:
         start_date, end_date = get_date_pair(
@@ -830,18 +837,35 @@ def lend_pass(pass_id):
 
     live_org = get_live_org(pass_obj.org_id)
 
-    ret_obj = {}
-    for date in range_inclusive_dates(start_date, end_date):
-        enqueued = live_org.enqueue_pass_lend(date, pass_obj.id)
-        ret_obj[date.strftime(DATE_FMT)] = {
-            'enqueued': enqueued
-        }
+    return action(start_date, end_date, pass_obj, live_obj)
 
-    # Should we have a way to mark a queue as retired? Or should that be
-    # inferred based on whether the queue is in the org's active-queue list.
-    return jsonify(ret_obj), 200
+@app.route('/passes/<pass_id>/lend', methods=['POST'])
+@jwt_required
+def lend_pass(pass_id):
+    def enqueue(start_date, end_date, pass_obj, live_obj):
+        ret_obj = {}
+        for date in range_inclusive_dates(start_date, end_date):
+            enqueued = live_org.enqueue_pass_lend(date, pass_obj.id)
+            ret_obj[date.strftime(DATE_FMT)] = {
+                'enqueued': enqueued
+            }
+
+        # Should we have a way to mark a queue as retired? Or should that be
+        # inferred based on whether the queue is in the org's active-queue list.
+        return jsonify(ret_obj), 200
+
+    return do_lend(pass_id, user_id, request.get_json(), enqueue)
 
 @app.route('/passes/<pass_id>/unlend', methods=['POST'])
 @jwt_required
 def unlend_pass(pass_id):
-    pass
+    def dequeue(start_date, end_date, pass_obj, live_obj):
+        ret_obj = {}
+        for date in range_inclusive_dates(start_date, end_date):
+            dequeued = live_org.dequeue_pass_lend(date, pass_obj.id)
+            ret_obj[date.strftime(DATE_FMT)] = {
+                'dequeued': dequeued
+            }
+        return jsonify(ret_obj), 200
+
+    return do_lend(pass_id, user_id, request.get_json(), dequeue)
