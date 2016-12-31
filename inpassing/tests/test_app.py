@@ -24,8 +24,10 @@ from . import data as test_data
 
 fix = SQLAlchemyFixture(env=models, engine=models.db.engine)
 
+
 def auth_headers(token):
     return {'Authorization': 'Bearer ' + token}
+
 
 class TestApp(unittest.TestCase):
     def setUp(self):
@@ -51,6 +53,7 @@ class TestApp(unittest.TestCase):
 
     def assert401(self, response):
         self.assertStatusCode(response, 401)
+
     def assert200(self, response):
         self.assertStatusCode(response, 200)
 
@@ -95,7 +98,8 @@ class TestApp(unittest.TestCase):
 
         self.assertEqual(1, len(user_obj.get('participates')))
         self.assertEqual(
-            test_data.Org.locust_valley.name, user_obj['participates'][0]['name']
+            test_data.Org.locust_valley.name,
+            user_obj['participates'][0]['name']
         )
 
         self.assertEqual([], user_obj.get('moderates'))

@@ -1,6 +1,8 @@
-import unittest
 import datetime
+import unittest
+
 from .. import util
+
 
 class TestRangeInclusiveDates(unittest.TestCase):
     def test_range_dates(self):

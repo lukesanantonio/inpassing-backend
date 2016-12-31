@@ -1,24 +1,25 @@
 # Copyright (c) 2016 Luke San Antonio Bialecki
 # All rights reserved.
 
-import getpass
-import bcrypt
 import datetime
+import getpass
+
+import bcrypt
+from flask_script import Manager
+from sqlalchemy.sql import and_
 
 import inpassing
 from inpassing.models import db, Org, User, Pass
 
-from flask_script import Manager
-
-from sqlalchemy.sql import and_
-
 manager = Manager(inpassing.app)
+
 
 @manager.command
 def create_schema():
     """Create DB schema with SQLAlchemy"""
 
     inpassing.db.create_all()
+
 
 def parse_field(prompt_fmt, cur_value):
     """Parse a value that can be correctly later."""
@@ -28,8 +29,10 @@ def parse_field(prompt_fmt, cur_value):
         return ret.strip()
     return cur_value
 
+
 def is_yes(val):
     return True if val in ['y', 'Y', 'yes', 'Yes', 'YES'] else False
+
 
 def choice(prompt, arr):
     """ Chooses a value from the array with a prompt, using a one-based value."""
@@ -41,11 +44,11 @@ def choice(prompt, arr):
     except:
         return None
 
-
     if choice_i < 0 or len(arr) <= choice_i:
         return None
 
     return arr[choice_i]
+
 
 @manager.command
 def create_user():
@@ -75,6 +78,7 @@ def create_user():
 
     print('Added user {} ({})'.format(new_user.id, new_user.email))
 
+
 @manager.command
 def create_org():
     """Creates an organization"""
@@ -90,6 +94,7 @@ def create_org():
     db.session.commit()
 
     print('Added org {} ({})'.format(new_org.id, new_org.name))
+
 
 @manager.command
 def verify_pass():
@@ -149,6 +154,7 @@ def verify_pass():
             db.session.commit()
 
             more_to_verify = len(reqs)
+
 
 if __name__ == "__main__":
     manager.run()

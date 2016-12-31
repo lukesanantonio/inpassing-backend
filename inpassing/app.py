@@ -1,12 +1,12 @@
 # Copyright (c) 2016 Luke San Antonio Bialecki
 # All rights reserved.
 
-import os
 from flask import Flask
 
 app = Flask(__name__, instance_relative_config=True)
 
 from . import default_config
+
 app.config.from_object(default_config)
 
 # Look for config.py in a given instance folder

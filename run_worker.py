@@ -4,6 +4,7 @@
 import sys
 
 import redis
+
 from inpassing.worker import ParkingWorker
 
 if __name__ == '__main__':

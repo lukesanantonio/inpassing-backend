@@ -1,10 +1,8 @@
 # Copyright (c) 2016 Luke San Antonio Bialecki
 # All rights reserved.
 
-from datetime import datetime, timedelta
-from . import queue
+from .queue import LiveOrg, str_to_date
 
-from .queue import LiveOrg, DATE_FMT, str_to_date
 
 class ParkingWorker:
     def __init__(self, redis_inst, org_id):

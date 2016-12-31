@@ -2,7 +2,6 @@
 # All rights reserved.
 
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.sql import func
 
 from .app import app
 
@@ -18,7 +17,7 @@ org_participants = db.Table('org_participants',
                                       primary_key=True),
                             db.Column('participant', db.ForeignKey('users.id'),
                                       primary_key=True)
-)
+                            )
 
 # Users can moderate any number of orgs (and don't necessarily have to
 # participate).
@@ -27,7 +26,8 @@ org_mods = db.Table('org_mods',
                               primary_key=True),
                     db.Column('mod', db.ForeignKey('users.id'),
                               primary_key=True)
-)
+                    )
+
 
 class Org(db.Model):
     __tablename__ = 'orgs'
@@ -68,6 +68,7 @@ class Org(db.Model):
 
     passes = db.relationship('Pass', backref='org', lazy='dynamic')
 
+
 # Day states make up the finite set that any given day will be assigned to. For
 # example, in an A-B system, there will be two states, one for A and one for B.
 # The IDs will probably be 0 and 1 while the string fields would be A and B,
@@ -83,6 +84,7 @@ class Daystate(db.Model):
     identifier = db.Column(db.String(50))
     # and a long one.
     greeting = db.Column(db.String(200))
+
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -112,6 +114,7 @@ class User(db.Model):
                              foreign_keys='Pass.owner_id',
                              lazy='dynamic')
 
+
 class Pass(db.Model):
     __tablename__ = 'passes'
 
@@ -135,6 +138,7 @@ class Pass(db.Model):
     assigned_time = db.Column(db.DateTime)
 
     transfer_token = db.Column(db.Integer, default=0)
+
 
 # The transfer log records the time and to whom a pass was lent to. This will
 # mainly be used for logging purposes.

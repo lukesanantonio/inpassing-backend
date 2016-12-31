@@ -1,20 +1,21 @@
 # Copyright (c) 2016 Luke San Antonio Bialecki
 # All rights reserved.
 
-import pdb
 from datetime import datetime
-from collections import namedtuple
 from enum import Enum
 
 DATE_FMT = '%Y-%m-%d'
+
 
 # We can't use lowercase pass so just make them capital
 class ObjType(Enum):
     User = 1
     Pass = 2
 
+
 class LiveObj:
     """Represents a pass or a user in a queue (with a request token)."""
+
     def __init__(self, ty, obj_id, obj_token):
         self.ty = ty
         self.id = obj_id
@@ -31,29 +32,33 @@ class LiveObj:
     def __bytes__(self):
         return str(self).encode()
 
+
 def date_to_str(day):
     return day.strftime(DATE_FMT)
+
 
 def str_to_date(s):
     return datetime.strptime(s, DATE_FMT)
 
+
 def _obj_exists(r, queue, obj):
-        """Returns whether the obj exists in the given queue."""
-        size = r.llen(queue)
+    """Returns whether the obj exists in the given queue."""
+    size = r.llen(queue)
 
-        # No reason to call lrange if we aren't even dealing with a list, for
-        # example.
-        if size == 0:
-            return False
+    # No reason to call lrange if we aren't even dealing with a list, for
+    # example.
+    if size == 0:
+        return False
 
-        ###
-        # Hopefully this isn't so wildly inefficient that it blows up in our
-        # face later.
-        ###
-        contents = r.lrange(queue, 0, size)
+    ###
+    # Hopefully this isn't so wildly inefficient that it blows up in our
+    # face later.
+    ###
+    contents = r.lrange(queue, 0, size)
 
-        # Make sure to use bytes so that comparisons work.
-        return True if bytes(obj) in contents else False
+    # Make sure to use bytes so that comparisons work.
+    return True if bytes(obj) in contents else False
+
 
 class LiveOrg:
     """This class manages live org data.
@@ -150,7 +155,6 @@ class LiveOrg:
                        self._active_queue_set(),
                        self._active_queue_temp_set())
 
-
         # Watch the list, if it changes, it's all over. Furthermore, if the set
         # changes, we need to give it time for the list to change too so we
         # don't think its not there when it was going to eventually be there and
@@ -161,12 +165,12 @@ class LiveOrg:
                                          self._active_queue_set())[2]
 
         def add_missing_queues(pipe):
-                # Add the elements missing from the list to the list.
-                contents = pipe.smembers(self._active_queue_diff_set())
+            # Add the elements missing from the list to the list.
+            contents = pipe.smembers(self._active_queue_diff_set())
 
-                pipe.multi()
-                pipe.lpush(self._active_queue_list(), *contents)
-                pipe.execute()
+            pipe.multi()
+            pipe.lpush(self._active_queue_list(), *contents)
+            pipe.execute()
 
         if num_missing > 0:
             # If members were missing we need to add them!
@@ -175,14 +179,13 @@ class LiveOrg:
                                self._active_queue_set(),
                                self._active_queue_list())
 
-
     ###
     # Functions for web service
     ###
     def _activate_day_queue(self, day):
         day_str = date_to_str(day)
-        def activate_queue(pipe):
 
+        def activate_queue(pipe):
             # Is this queue already active?
             is_member = pipe.sismember(self._active_queue_set(), day_str)
 
@@ -198,6 +201,7 @@ class LiveOrg:
 
     def _deactivate_day_queue(self, day):
         day_str = date_to_str(day)
+
         def deactivate_queue(pipe):
             # Is this queue active?
             is_member = pipe.sismember(self._active_queue_set(), day_str)
@@ -249,6 +253,7 @@ class LiveOrg:
         either that or I just need sleep.
 
         """
+
         def refresh_obj(pipe):
 
             # Get the current user token

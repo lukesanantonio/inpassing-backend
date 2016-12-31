@@ -1,8 +1,10 @@
 # Copyright (c) 2016 Luke San Antonio Bialecki
 # All rights reserved.
 
-from sqlalchemy.sql import and_, or_
+from sqlalchemy.sql import and_
+
 from .models import Pass
+
 
 def query_user_passes(session, user_id, verified=None):
     if verified == True:
@@ -18,6 +20,7 @@ def query_user_passes(session, user_id, verified=None):
     else:
         # All passes
         return session.query(Pass).filter(Pass.owner_id == user_id).all()
+
 
 def query_org_passes(session, org_id, verified=None):
     if verified == True:

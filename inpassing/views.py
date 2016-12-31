@@ -1,40 +1,35 @@
 # Copyright (c) 2016 Luke San Antonio Bialecki
 # All rights reserved.
 
-from flask import request, jsonify, url_for
+import datetime
+from datetime import datetime
 
-from . import pass_util
-from .app import app
+import bcrypt
+import redis
+from flask import request, jsonify, url_for
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token, \
+    get_jwt_identity
 
 from . import models
-from .models import Org, User, Pass, Daystate, db
-
+from . import pass_util
 from . import util
+from .app import app
+from .models import Org, User, Pass, Daystate, db
 from .util import jwt_optional, range_inclusive_dates
-
-import datetime
-import json
-import bcrypt
-
-from flask_jwt_extended import JWTManager, jwt_required, create_access_token,\
-    create_refresh_token, jwt_refresh_token_required, get_jwt_identity
-
-from datetime import timedelta, datetime
-
 from .worker import DATE_FMT
-
-import redis
-from .worker.queue import LiveObj, LiveOrg
+from .worker.queue import LiveOrg
 
 jwt = JWTManager(app)
 
 redis = redis.StrictRedis(host='localhost', port=6379, db=0)
 live_orgs = {}
 
+
 @jwt.user_identity_loader
 def user_identity(ident):
     # The user is identified with their ID.
     return ident.id
+
 
 def user_is_participant(user_id, org_id):
     q = db.session.query(models.org_participants).filter_by(
@@ -43,10 +38,12 @@ def user_is_participant(user_id, org_id):
     (ret,) = db.session.query(q.exists()).first()
     return ret
 
+
 def user_is_mod(user_id, org_id):
     q = db.session.query(models.org_mods).filter_by(mod=user_id, org=org_id)
     (ret,) = db.session.query(q.exists()).first()
     return ret
+
 
 # Orgs
 
@@ -71,6 +68,7 @@ def create_org():
         'Location': url_for('orgs_query', org_id=org.id)
     }))
 
+
 @app.route('/orgs/<org_id>')
 @jwt_optional
 def orgs_query(org_id):
@@ -90,16 +88,17 @@ def orgs_query(org_id):
 
     return jsonify(ret), 200
 
+
 @app.route('/orgs/search')
 def orgs_search():
     query = request.args.get('q') or ''
     orgs = db.session.query(Org).filter(Org.name.like('%' + query + '%')).all()
-    return jsonify([{'id': org.id, 'name': org.name } for org in orgs]), 200
+    return jsonify([{'id': org.id, 'name': org.name} for org in orgs]), 200
+
 
 # Org participants
 @app.route('/orgs/<org_id>/participants', methods=['GET', 'POST'])
 def org_participants(org_id):
-
     org = Org.query.filter_by(id=org_id).first()
     if org == None:
         return jsonify({
@@ -128,14 +127,14 @@ def org_participants(org_id):
 
         # Make sure we were given a valid id
         participant_id = js.get('user_id')
-        if participant_id == None:
+        if participant_id is None:
             return jsonify({
                 'msg': 'missing user_id'
             }), 422
 
         # And that the ID represents a valid user
         participant = User.query.filter_by(id=participant_id).first()
-        if participant == None:
+        if participant is None:
             return jsonify({
                 'msg': 'unknown user {}'.format(participant_id)
             }), 422
@@ -164,19 +163,20 @@ def org_participants(org_id):
         # The method is GET
         if mod_request:
             # Return all participants
-            return jsonify([
-                util.user_dict(user) for user in org.participants
-            ]), 200
+            return jsonify(
+                [util.user_dict(user) for user in org.participants]
+            ), 200
         else:
             # They know what they did wrong.
             return '', 403
+
 
 @app.route('/orgs/<org_id>/participants/<user_id>')
 @jwt_required
 def org_participants_query(org_id, user_id):
     # Find the org in question
     org = Org.query.filter_by(id=org_id).first()
-    if org == None:
+    if org is None:
         return jsonify({
             'msg': 'org not found'
         }), 404
@@ -224,13 +224,13 @@ def org_participants_query(org_id, user_id):
             )
         }), 403
 
+
 # Org moderators
 @app.route('/orgs/<org_id>/moderators', methods=['GET', 'POST'])
 @jwt_required
 def org_moderators(org_id):
-
     org = Org.query.filter_by(id=org_id).first()
-    if org == None:
+    if org is None:
         return jsonify({
             'msg': 'org not found'
         }), 404
@@ -249,14 +249,14 @@ def org_moderators(org_id):
 
         # Make sure we were given a valid id
         mod_id = js.get('user_id')
-        if mod_id == None:
+        if mod_id is not None:
             return jsonify({
                 'msg': 'missing user_id'
             }), 422
 
         # And that the ID represents a valid user
         mod = User.query.filter_by(id=mod_id).first()
-        if mod == None:
+        if mod is not None:
             return jsonify({
                 'msg': 'unknown user {}'.format(mod_id)
             }), 422
@@ -277,16 +277,17 @@ def org_moderators(org_id):
 
     else:
         # The method is GET so return all moderators
-        return jsonify([
-            util.user_dict(user) for user in org.moderators
-        ]), 200
+        return jsonify(
+            [util.user_dict(user) for user in org.moderators]
+        ), 200
+
 
 @app.route('/orgs/<org_id>/moderators/<user_id>')
 @jwt_required
 def org_moderators_query(org_id, user_id):
     # Find the org in question
     org = Org.query.filter_by(id=org_id).first()
-    if org == None:
+    if org is not None:
         return jsonify({
             'msg': 'org not found'
         }), 404
@@ -309,12 +310,12 @@ def org_moderators_query(org_id, user_id):
             'msg': 'user {} does not moderate org {}'.format(user_id, org_id)
         }), 404
 
+
 # Day states
 
 @app.route('/orgs/<org_id>/daystates', methods=['GET', 'POST'])
 @jwt_required
 def org_daystates(org_id):
-
     # Check to see if the org exists
     org_q = db.session.query(Org).filter_by(id=org_id)
     (org_exists,) = db.session.query(org_q.exists()).first()
@@ -345,9 +346,9 @@ def org_daystates(org_id):
                 'msg': 'missing daystate greeting'
             }), 422
 
-        daystate = Daystate(org_id = org_id,
-                            identifier = data['identifier'],
-                            greeting = data['greeting'])
+        daystate = Daystate(org_id=org_id,
+                            identifier=data['identifier'],
+                            greeting=data['greeting'])
         db.session.add(daystate)
         db.session.commit()
 
@@ -368,12 +369,15 @@ def org_daystates(org_id):
         # Query org day states by org id
         daystates = Daystate.query.filter_by(org_id=org_id).all()
 
-        return jsonify([{
-            'id': state.id,
-            'org_id': state.org_id,
-            'identifier': state.identifier,
-            'greeting': state.greeting
-        } for state in daystates]), 200
+        return jsonify(
+            [{
+                 'id': state.id,
+                 'org_id': state.org_id,
+                 'identifier': state.identifier,
+                 'greeting': state.greeting
+             } for state in daystates]
+        ), 200
+
 
 # Technically, daystates are separate from orgs, but we want the client to know
 # what org a given day state ID applies for. That is to say that all daystates
@@ -381,12 +385,11 @@ def org_daystates(org_id):
 @app.route('/orgs/<org_id>/daystates/<daystate_id>', methods=['GET', 'PUT'])
 @jwt_required
 def org_daystates_query(org_id, daystate_id):
-
     # Find the day state in question
     daystate = Daystate.query.filter_by(id=daystate_id, org_id=org_id).first()
 
     # Is it valid?
-    if daystate == None:
+    if daystate is None:
         return jsonify({
             'msg': 'daystate not found'
         }), 404
@@ -426,10 +429,10 @@ def org_daystates_query(org_id, daystate_id):
     # If they made it this far they are allowed to see the day state.
     return jsonify(util.daystate_dict(daystate)), 200
 
+
 @app.route('/orgs/<org_id>/daystates/current')
 @jwt_required
 def org_daystates_current(org_id):
-
     user_id = get_jwt_identity()
     if not (user_is_participant(user_id, org_id) or
             user_is_mod(user_id, org_id)):
@@ -442,6 +445,7 @@ def org_daystates_current(org_id):
     # TODO: Tie this into the live org / worker implementation somehow!
     daystate = Daystate.query.filter_by(org_id=org_id).first()
     return jsonify(util.daystate_dict(daystate)), 200
+
 
 # We would claim the Orgs that a user participates in and mods but that
 # information may change in the future, so we're either gonna have to invalidate
@@ -477,7 +481,7 @@ def user_signup():
             'msg': 'password is a required field'
         }
 
-    if err != None:
+    if err is not None:
         return jsonify(err), 422
 
     # Hash password, add user, return response.
@@ -491,6 +495,7 @@ def user_signup():
         'user_id': user.id,
         'msg': 'successfully created new user'
     }), 200
+
 
 # Idea: Add anonymous auth @ GET /auth/anon.jwt or something
 @app.route('/user/auth', methods=['POST'])
@@ -510,6 +515,7 @@ def auth_user():
         # Authentication error
         return jsonify({'msg': 'invalid username or password'}), 401
 
+
 @app.route('/me')
 @jwt_required
 def me():
@@ -521,8 +527,9 @@ def me():
     user_obj['passes'] = [
         util.pass_dict(pas)
         for pas in pass_util.query_user_passes(db.session, user_id)
-    ]
+        ]
     return jsonify(user_obj), 200
+
 
 # Passes
 @app.route('/passes', methods=['GET', 'POST'])
@@ -549,10 +556,10 @@ def passes():
             if filter_verified is not None:
                 if filter_verified:
                     # We're looking for verified passes
-                    allow = (allow and p.assigned_time != None)
+                    allow = (allow and p.assigned_time is not None)
                 else:
                     # We're looking for unverified passes
-                    allow = (allow and p.assigned_time == None)
+                    allow = (allow and p.assigned_time is None)
 
             return allow
 
@@ -634,6 +641,7 @@ def passes():
             'Location': url_for('passes_query', pass_id=p.id)
         }))
 
+
 @app.route('/passes/<pass_id>', methods=['GET', 'PUT', 'DELETE'])
 @jwt_required
 def passes_query(pass_id):
@@ -642,7 +650,7 @@ def passes_query(pass_id):
     if request.method == 'GET':
         # Make sure the user is allowed to see this pass
         if (user_is_mod(get_jwt_identity(), p.org_id) or
-            get_jwt_identity() == p.owner_id):
+                    get_jwt_identity() == p.owner_id):
             # If the user moderates the org which the pass belongs to they are
             # allowed to see it. They can also just be the owner.
             return jsonify(util.pass_dict(p)), 200
@@ -666,7 +674,7 @@ def passes_query(pass_id):
             if new_state_id is not None:
                 # Make sure this is a valid state id
                 state_q = Daystate.query.filter_by(
-                    id = new_state_id, org_id = p.org_id
+                    id=new_state_id, org_id=p.org_id
                 )
                 (exists,) = db.session.query(state_q.exists()).first()
                 if not exists:
@@ -680,7 +688,7 @@ def passes_query(pass_id):
                 modified = True
 
             if new_spot_num is not None:
-                p.assigned_spot_num = spot_num
+                p.assigned_spot_num = new_spot_num
                 modified = True
             if new_owner_id is not None:
                 p.owner_id = new_owner_id
@@ -723,13 +731,16 @@ def passes_query(pass_id):
                 'msg': 'not authorized to remove this pass'
             }), 403
 
+
 class MissingDateError(Exception):
     def __str__(self):
         return 'must provide date *or* start_date and end_date'
 
+
 class EndDateTooEarlyError(Exception):
     def __str__(self):
         return 'start_date must come before end_date'
+
 
 def get_date_pair(date_in, start_date_in, end_date_in):
     start_date = None
@@ -740,7 +751,7 @@ def get_date_pair(date_in, start_date_in, end_date_in):
         start_date = date
         end_date = date
     else:
-        if start_date_in == None or end_date_in == None:
+        if start_date_in is None or end_date_in is None:
             raise MissingDateError
         else:
             start_date = datetime.strptime(start_date_in, DATE_FMT)
@@ -751,22 +762,24 @@ def get_date_pair(date_in, start_date_in, end_date_in):
 
     return start_date, end_date
 
+
 def get_live_org(org_id):
     if org_id not in live_orgs:
         live_orgs[org_id] = LiveOrg(redis, org_id)
 
     return live_orgs[org_id]
 
+
 def do_borrow(user_id, js, action):
     user_obj = User.query.filter_by(id=user_id).first()
-    if user_obj == None:
+    if user_obj is None:
         return jsonify({
             'msg': "user {} doesn't exist, this is really bad".format(user_id)
         }), 404
 
     # Make sure we were also given an org id.
     org_id = js.get('org_id')
-    if org_id == None:
+    if org_id is None:
         return (jsonify({
             'msg': 'missing org'
         }), 422), True
@@ -783,10 +796,11 @@ def do_borrow(user_id, js, action):
     live_org = get_live_org(org_id)
     return action(start_date, end_date, user_obj, live_org)
 
+
 @app.route('/passes/borrow', methods=['POST'])
 @jwt_required
 def borrow_pass():
-    def enqueue(start_date, end_date, user_obj, live_obj):
+    def enqueue(start_date, end_date, user_obj, live_org):
         ret_obj = {}
         for date in range_inclusive_dates(start_date, end_date):
             enqueued = live_org.enqueue_user_borrow(date, user_obj.id)
@@ -798,10 +812,11 @@ def borrow_pass():
 
     return do_borrow(get_jwt_identity, request.get_json(), enqueue)
 
+
 @app.route('/passes/unborrow')
 @jwt_required
 def unborrow_pass():
-    def dequeue(start_date, end_date, user_obj, live_obj):
+    def dequeue(start_date, end_date, user_obj, live_org):
         ret_obj = {}
         for date in range_inclusive_dates(start_date, end_date):
             dequeued = live_org.dequeue_user_borrow(date, user_obj.id)
@@ -813,9 +828,10 @@ def unborrow_pass():
 
     return do_borrow(get_jwt_identity, request.get_json(), dequeue)
 
+
 def do_lend(pass_id, user_id, js, action):
-    pass_obj = Pass.query.filter_by(id = pass_id).first()
-    if pass_obj == None:
+    pass_obj = Pass.query.filter_by(id=pass_id).first()
+    if pass_obj is None:
         return jsonify({
             'msg': "pass {} doesn't exist".format(pass_id)
         }), 404
@@ -837,12 +853,13 @@ def do_lend(pass_id, user_id, js, action):
 
     live_org = get_live_org(pass_obj.org_id)
 
-    return action(start_date, end_date, pass_obj, live_obj)
+    return action(start_date, end_date, pass_obj, live_org)
+
 
 @app.route('/passes/<pass_id>/lend', methods=['POST'])
 @jwt_required
 def lend_pass(pass_id):
-    def enqueue(start_date, end_date, pass_obj, live_obj):
+    def enqueue(start_date, end_date, pass_obj, live_org):
         ret_obj = {}
         for date in range_inclusive_dates(start_date, end_date):
             enqueued = live_org.enqueue_pass_lend(date, pass_obj.id)
@@ -854,12 +871,13 @@ def lend_pass(pass_id):
         # inferred based on whether the queue is in the org's active-queue list.
         return jsonify(ret_obj), 200
 
-    return do_lend(pass_id, user_id, request.get_json(), enqueue)
+    return do_lend(pass_id, get_jwt_identity(), request.get_json(), enqueue)
+
 
 @app.route('/passes/<pass_id>/unlend', methods=['POST'])
 @jwt_required
 def unlend_pass(pass_id):
-    def dequeue(start_date, end_date, pass_obj, live_obj):
+    def dequeue(start_date, end_date, pass_obj, live_org):
         ret_obj = {}
         for date in range_inclusive_dates(start_date, end_date):
             dequeued = live_org.dequeue_pass_lend(date, pass_obj.id)
@@ -868,4 +886,4 @@ def unlend_pass(pass_id):
             }
         return jsonify(ret_obj), 200
 
-    return do_lend(pass_id, user_id, request.get_json(), dequeue)
+    return do_lend(pass_id, get_jwt_identity(), request.get_json(), dequeue)
