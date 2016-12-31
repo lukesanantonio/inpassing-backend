@@ -525,48 +525,119 @@ def me():
     return jsonify(user_obj), 200
 
 # Passes
-@app.route('/passes')
+@app.route('/passes', methods=['GET', 'POST'])
 @jwt_required
 def passes():
     user = User.query.filter_by(id=get_jwt_identity()).first()
 
-    # Filter by org
-    filter_org_id = request.args.get('org_id')
+    if request.method == 'GET':
+        # Filter by org
+        filter_org_id = request.args.get('org_id')
 
-    # Filter by user
-    filter_user_id = request.args.get('user_id')
+        # Filter by user
+        filter_user_id = request.args.get('user_id')
 
-    # Filter by verified or not
-    filter_verified = request.args.get('verified')
+        # Filter by verified or not
+        filter_verified = request.args.get('verified')
 
-    def allow_pass(p):
-        allow = True
-        if filter_org_id is not None:
-            allow = (allow and p.org_id == filter_org_id)
-        if filter_user_id is not None:
-            allow = (allow and p.owner_id == filter_user_id)
-        if filter_verified is not None:
-            if filter_verified:
-                # We're looking for verified passes
-                allow = (allow and p.assigned_time != None)
-            else:
-                # We're looking for unverified passes
-                allow = (allow and p.assigned_time == None)
+        def allow_pass(p):
+            allow = True
+            if filter_org_id is not None:
+                allow = (allow and p.org_id == filter_org_id)
+            if filter_user_id is not None:
+                allow = (allow and p.owner_id == filter_user_id)
+            if filter_verified is not None:
+                if filter_verified:
+                    # We're looking for verified passes
+                    allow = (allow and p.assigned_time != None)
+                else:
+                    # We're looking for unverified passes
+                    allow = (allow and p.assigned_time == None)
 
-        return allow
+            return allow
 
-    # Build a dict of all passes this user can access.
+        # Build a dict of all passes this user can access.
 
-    # Passes owned by this user
-    all_passes = user.passes[:]
+        # Passes owned by this user
+        all_passes = user.passes[:]
 
-    for org in user.moderates:
-        # And all passes in all the orgs that this user moderates.
-        all_passes.extend(org.passes[:])
+        for org in user.moderates:
+            # And all passes in all the orgs that this user moderates.
+            all_passes.extend(org.passes[:])
 
-    return jsonify({
-        'passes': [util.pass_dict(p) for p in all_passes if allow_pass(p)]
-    }), 200
+        return jsonify({
+            'passes': [util.pass_dict(p) for p in all_passes if allow_pass(p)]
+        }), 200
+
+    elif request.method == 'POST':
+        # Request a new pass on behalf of the user
+        js_data = request.get_json()
+
+        # We verify that the org id is valid when we check the day state.
+        org_id = js_data.get('org_id')
+        if org_id is None:
+            return jsonify({
+                'msg': 'missing org id'
+            }), 422
+
+        state_id = js_data.get('state_id')
+        if state_id is None:
+            return jsonify({
+                'msg': 'missing state id'
+            }), 422
+
+        # Make sure that state exists
+        state_query = Daystate.query.filter_by(id=state_id, org_id=org_id)
+        (exists,) = db.session.query(state_query.exists()).first()
+
+        if not exists:
+            return jsonify({
+                'msg': 'bad state id'
+            }), 422
+
+        spot_num = js_data.get('spot_num')
+        if spot_num is None:
+            return jsonify({
+                'msg': 'missing spot num'
+            }), 422
+
+        p = Pass()
+        p.org_id = org_id
+        p.requested_state_id = state_id
+        p.requested_spot_num = spot_num
+        p.request_time = datetime.datetime.now()
+
+        # What is the authenticated user's relationship to the org?
+        if user_is_mod(get_jwt_identity(), org_id):
+            # Do whatever they say, now
+            p.owner_id = js_data.get('owner_id') or get_jwt_identity()
+            p.assigned_state_id = state_id
+            p.assigned_spot_num = spot_num
+            p.assigner = get_jwt_identity()
+            p.assigned_time = datetime.datetime.now()
+
+        elif user_is_participant(get_jwt_identity(), org_id):
+            # They can request a pass but only for themselves
+            owner_id = js_data.get('owner_id')
+            if owner_id is not None and owner_id != get_jwt_identity():
+                return jsonify({
+                    'msg': 'user cannot request a pass for something else'
+                }), 403
+
+            # A participant should only be requesting a pass for themselves.
+            p.owner_id = get_jwt_identity()
+
+        # Add the pass and return its uri.
+        db.session.add(p)
+        db.session.commit()
+        return current_app.make_response(('', 201, {
+            'Location': url_for('passes_query', pass_id=p.id)
+        }))
+
+@app.route('/passes/<pass_id>', methods=['GET', 'PUT', 'DELETE'])
+@jwt_required
+def passes_query(pass_id):
+    pass
 
 class MissingDateError(Exception):
     def __str__(self):
