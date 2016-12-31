@@ -131,6 +131,7 @@ class Pass(db.Model):
     assigned_state_id = db.Column(db.Integer, db.ForeignKey('daystates.id'))
     assigned_spot_num = db.Column(db.Integer)
 
+    assigner = db.Column(db.Integer, db.ForeignKey('users.id'))
     assigned_time = db.Column(db.DateTime)
 
     transfer_token = db.Column(db.Integer, default=0)
