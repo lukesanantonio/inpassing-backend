@@ -757,26 +757,28 @@ def get_live_org(org_id):
 
     return live_orgs[org_id]
 
-@app.route('/me/borrow', methods=['POST'])
+@app.route('/passes/borrow', methods=['POST'])
 @jwt_required
-def me_borrow():
+def borrow_pass():
     user_obj = db.session.query(User).filter_by(id=get_jwt_identity()).first()
     if user_obj == None:
         return jsonify({
             'msg': "user {} doesn't exist, this is really bad".format(pass_id)
         }), 404
 
+    js = request.get_json()
+
     # Make sure we were also given an org id.
-    org_id = request.form.get('org_id')
+    org_id = js.get('org_id')
     if org_id == None:
         return jsonify({
             'msg': 'missing org'
         }), 422
 
     try:
-        start_date, end_date = get_date_pair(request.form.get('date'),
-                                             request.form.get('start_date'),
-                                             request.form.get('end_date'))
+        start_date, end_date = get_date_pair(
+            js.get('date'), js.get('start_date'), js.get('end_date')
+        )
     except (MissingDateError, EndDateTooEarlyError) as e:
         return jsonify({
             'msg': str(e)
@@ -794,117 +796,12 @@ def me_borrow():
     return jsonify(ret_obj), 200
 
 
-@app.route('/me/unborrow')
+@app.route('/passes/unborrow')
 @jwt_required
-def me_unborrow():
+def unborrow_pass():
     pass
 
-# Give the user a new pass (or at least request one).
-@app.route('/org/<org_id>/pass', methods=['POST'])
-@jwt_required
-def me_request_pass(org_id):
-    user_id = get_jwt_identity()
-
-    # Make sure the user is allowed to participate
-    if not user_is_participant(user_id, org_id):
-        return jsonify({
-            'msg': 'user {} must participate in org {}'.format(user_id, org_id)
-        }), 403
-
-    state_id = request.form.get('state_id')
-    spot_num = request.form.get('spot_num')
-
-    err = None
-    if state_id == None:
-        err = {
-            'msg': 'missing state_id'
-        }
-    elif spot_num == None:
-        err = {
-            'msg': 'missing spot_num'
-        }
-
-    if err != None:
-        return jsonify(err), 422
-
-    # Create a new request in the request log
-    req = Pass(org_id = org_id,
-               owner_id = user_id,
-               requested_state_id = state_id,
-               requested_spot_num = spot_num,
-               request_time = datetime.now())
-
-    db.session.add(req)
-    db.session.commit()
-
-    return jsonify({
-        'pass_id': req.id
-    }), 200
-
-# Add this so that we can do this live with AJAX or something
-@app.route('/org/<org_id>/passes')
-@jwt_required
-def org_passes(org_id):
-    user = db.session.query(User).filter_by(id=get_jwt_identity()).first()
-
-    # Is there any way to avoid this query in order to check if a user is a mod?
-    org = db.session.query(Org).filter_by(id=org_id).first()
-
-    if org not in user.moderates:
-        return jsonify({
-            'msg': 'user {} must moderate org {}'.format(user.id, org_id)
-        }), 403
-
-    return jsonify({
-        'passes': [util.pass_dict(p) for p in passes]
-    }), 200
-
-@app.route('/org/<org_id>/pass/<pass_id>')
-@jwt_required
-def org_pass_get(org_id, pass_id):
-    # TODO: Some way to make sure the user is a mod.
-    p = db.session.query(Pass).filter(
-        and_(Pass.id == pass_id, Pass.org_id == org_id)
-    ).first()
-
-    if p == None:
-        return jsonify('nonexistent pass {}'.format(pass_id)), 404
-
-    return jsonify({
-        'pass': util.pass_dict(p)
-    }), 200
-
-
-@app.route('/org/<org_id>/pass/<pass_id>/assign', methods=['PUT'])
-@jwt_required
-def org_pass_assign(org_id, pass_id):
-    # Find the pass
-    p = db.session.query(Pass).filter(
-        and_(Pass.id == pass_id, Pass.org_id == org_id)
-    ).first()
-
-    if p == None:
-        return jsonify({
-            'msg': 'nonexistent pass {}'.format(pass_id)
-        }), 422
-
-    user_id = get_jwt_identity()
-    if p.owner_id != user_id:
-        return jsonify({
-            'msg': 'pass {} not owned by user {}'.format(pass_id, user_id)
-        }), 403
-
-    p.assigned_time = datetime.now()
-    p.assigned_state_id = request.form.get('state_id', p.requested_state_id)
-    p.assigned_spot_num = request.form.get('spot_nyum', p.requested_spot_num)
-    db.session.commit()
-
-    return jsonify({
-        'msg': 'success',
-        'pass': util.pass_dict(p),
-    }), 200
-
-@app.route('/pass/<pass_id>/lend', methods=['POST'])
+@app.route('/passes/<pass_id>/lend', methods=['POST'])
 @jwt_required
 def lend_pass(pass_id):
     pass_obj = db.session.query(Pass).filter_by(id=pass_id).first()
@@ -920,10 +817,12 @@ def lend_pass(pass_id):
             'msg': 'pass {} not owned by user {}'.format(pass_id, user_id)
         }), 403
 
+    js = request.get_json()
+
     try:
-        start_date, end_date = get_date_pair(request.form.get('date'),
-                                             request.form.get('start_date'),
-                                             request.form.get('end_date'))
+        start_date, end_date = get_date_pair(
+            js.get('date'), js.get('start_date'), js.get('end_date')
+        )
     except (MissingDateError, EndDateTooEarlyError) as e:
         return jsonify({
             'msg': str(e)
@@ -941,3 +840,8 @@ def lend_pass(pass_id):
     # Should we have a way to mark a queue as retired? Or should that be
     # inferred based on whether the queue is in the org's active-queue list.
     return jsonify(ret_obj), 200
+
+@app.route('/passes/<pass_id>/unlend', methods=['POST'])
+@jwt_required
+def unlend_pass(pass_id):
+    pass
