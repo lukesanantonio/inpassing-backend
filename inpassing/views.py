@@ -452,7 +452,7 @@ def org_daystates_current(org_id):
 # the token, ignore the claims in the token and look it up ourselves, or like I
 # don't even know.
 
-@app.route('/user/signup', methods=['POST'])
+@app.route('/users', methods=['POST'])
 def user_signup():
     first_name = request.get_json().get('first_name')
     last_name = request.get_json().get('last_name')
@@ -498,7 +498,7 @@ def user_signup():
 
 
 # Idea: Add anonymous auth @ GET /auth/anon.jwt or something
-@app.route('/user/auth', methods=['POST'])
+@app.route('/users/auth', methods=['POST'])
 def auth_user():
     in_email = request.get_json().get('email', '')
     in_passwd = request.get_json().get('password', '')
