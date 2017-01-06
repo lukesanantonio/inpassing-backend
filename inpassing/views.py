@@ -249,14 +249,14 @@ def org_moderators(org_id):
 
         # Make sure we were given a valid id
         mod_id = js.get('user_id')
-        if mod_id is not None:
+        if mod_id is None:
             return jsonify({
                 'msg': 'missing user_id'
             }), 422
 
         # And that the ID represents a valid user
         mod = User.query.filter_by(id=mod_id).first()
-        if mod is not None:
+        if mod is None:
             return jsonify({
                 'msg': 'unknown user {}'.format(mod_id)
             }), 422
@@ -287,7 +287,7 @@ def org_moderators(org_id):
 def org_moderators_query(org_id, user_id):
     # Find the org in question
     org = Org.query.filter_by(id=org_id).first()
-    if org is not None:
+    if org is None:
         return jsonify({
             'msg': 'org not found'
         }), 404
