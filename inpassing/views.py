@@ -485,7 +485,7 @@ def user_signup():
         return jsonify(err), 422
 
     # Hash password, add user, return response.
-    hashpass = bcrypt.hashpw(password, bcrypt.gensalt(12))
+    hashpass = bcrypt.hashpw(password.encode('ascii'), bcrypt.gensalt(12))
     user = User(first_name=first_name, last_name=last_name, email=email,
                 password=hashpass)
     db.session.add(user)
