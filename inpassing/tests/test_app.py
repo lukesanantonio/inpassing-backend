@@ -1,43 +1,40 @@
 # Copyright (c) 2016 Luke San Antonio Bialecki
 # All rights reserved.
 
-from ..app import app
-
-# Adjust config for testing
-app.config.update({
-    'SECRET_KEY': 'this-key-is-only-for-testing',
-    'DEBUG': True,
-    'TESTING': True,
-    'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
-    'SQLALCHEMY_TRACK_MODIFICATIONS': False
-})
-
-# Set up models
-from .. import models
-
-import re
 import json
-import unittest
+import re
 
 from fixture import SQLAlchemyFixture
-from . import data as test_data
+from flask_testing import TestCase
 
-fix = SQLAlchemyFixture(env=models, engine=models.db.engine)
+from . import data as test_data
+from .. import models
+from ..app import create_app
+
+
+class testing_config:
+    SECRET_KEY = 'this-key-is-only-for-testing'
+    DEBUG = True
+    TESTING = True
+    PRESERVE_CONTEXT_ON_EXCEPTION = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 
 def auth_headers(token):
     return {'Authorization': 'Bearer ' + token}
 
 
-class TestApp(unittest.TestCase):
-    def setUp(self):
-        # Create a client to use
-        self.client = app.test_client()
+class TestApp(TestCase):
+    def create_app(self):
+        return create_app(testing_config, suppress_env_config=True)
 
+    def setUp(self):
         # Create tables
         models.db.create_all()
 
         # Load data
+        fix = SQLAlchemyFixture(env=models, engine=models.db.engine)
         self.data = fix.data(*test_data.all_data)
         self.data.setup()
 
@@ -47,19 +44,9 @@ class TestApp(unittest.TestCase):
         models.db.session.remove()
         models.db.drop_all()
 
-    def assertStatusCode(self, response, code):
-        """Assert that a given response is a given status code."""
-        self.assertEqual(code, response.status_code)
-
-    def assert401(self, response):
-        self.assertStatusCode(response, 401)
-
-    def assert200(self, response):
-        self.assertStatusCode(response, 200)
-
     def auth(self, user):
         res = self.client.post(
-            '/user/auth', content_type='application/json',
+            '/users/auth', content_type='application/json',
             data='{"email": "' + user.email + '", "password": "password"}'
         )
         self.assert200(res)
@@ -71,7 +58,7 @@ class TestApp(unittest.TestCase):
 
     def test_bad_auth(self):
         res = self.client.post(
-            '/user/auth', content_type='application/json',
+            '/users/auth', content_type='application/json',
             data='{"email": "madeupemail", "password": "password"}'
         )
         self.assert401(res)
@@ -79,7 +66,7 @@ class TestApp(unittest.TestCase):
     def _test_user(self, user, token=None):
         token = token or self.auth(user)
 
-        res = self.client.get('/me', headers=auth_headers(token))
+        res = self.client.get('/users/me', headers=auth_headers(token))
         self.assert200(res)
         self.assertEqual('application/json', res.content_type)
 
@@ -120,7 +107,7 @@ class TestApp(unittest.TestCase):
 
     def test_org_create(self):
         # A regular user should not be able to get this
-        self.assert401(self.client.post('/orgs'))
+        self.assert401(self.client.post('/orgs/'))
 
         # Authenticate as a regular user, then try it again.
         token = self.auth(test_data.User.user)
@@ -128,7 +115,7 @@ class TestApp(unittest.TestCase):
         # This token is good as a regular user, create an org and see what
         # happens.
         ORG_NAME = 'My First Org'
-        res = self.client.post('/orgs', content_type='application/json',
+        res = self.client.post('/orgs/', content_type='application/json',
                                data='{"name": "' + ORG_NAME + '"}',
                                headers=auth_headers(token))
 

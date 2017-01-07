@@ -3,9 +3,7 @@
 
 from flask_sqlalchemy import SQLAlchemy
 
-from .app import app
-
-db = SQLAlchemy(app)
+db = SQLAlchemy()
 
 # Org: Parking rules
 # Participant: A user who parks

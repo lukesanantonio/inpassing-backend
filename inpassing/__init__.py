@@ -2,6 +2,6 @@
 # All rights reserved.
 
 from . import models, views
-from .app import app
+from .app import create_app
 from .models import db
 

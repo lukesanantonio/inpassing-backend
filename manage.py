@@ -11,7 +11,10 @@ from sqlalchemy.sql import and_
 import inpassing
 from inpassing.models import db, Org, User, Pass
 
-manager = Manager(inpassing.app)
+# Create a test app
+app = inpassing.create_app(instance_relative_config=True)
+
+manager = Manager(app)
 
 
 @manager.command
