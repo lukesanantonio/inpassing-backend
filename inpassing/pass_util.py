@@ -7,12 +7,12 @@ from .models import Pass
 
 
 def query_user_passes(session, user_id, verified=None):
-    if verified == True:
+    if verified:
         # Only verified passes
         return session.query(Pass).filter(
             and_(Pass.owner_id == user_id, Pass.assigned_time != None)
         ).all()
-    elif verified == False:
+    elif not verified:
         # Only non-verified passes
         return session.query(Pass).filter(
             and_(Pass.owner_id == user_id, Pass.assigned_time == None)
@@ -23,12 +23,12 @@ def query_user_passes(session, user_id, verified=None):
 
 
 def query_org_passes(session, org_id, verified=None):
-    if verified == True:
+    if verified:
         # Only verified passes
         return session.query(Pass).filter(
             and_(Pass.org_id == org_id, Pass.assigned_time != None)
         ).all()
-    elif verified == False:
+    elif not verified:
         # Only non-verified passes
         return session.query(Pass).filter(
             and_(Pass.org_id == org_id, Pass.assigned_time == None)
