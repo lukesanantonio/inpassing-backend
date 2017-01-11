@@ -6,7 +6,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, \
     create_access_token
 
-from .. import util, pass_util
+from .. import util, pass_util, exceptions as ex
 from ..models import db, User
 
 user_api = Blueprint('auth', __name__)
@@ -62,6 +62,14 @@ def user_signup():
 
     if err is not None:
         return jsonify(err), 422
+
+    # Does a user with this email already exist?
+    user_email_q = User.query.filter_by(email=email)
+
+    (user_exists,) = db.session.query(user_email_q.exists())
+
+    if user_exists:
+        raise ex.UserExistsError()
 
     # Hash password, add user, return response.
     hashpass = bcrypt.hashpw(password.encode('ascii'), bcrypt.gensalt(12))
