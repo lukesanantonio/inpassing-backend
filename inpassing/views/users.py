@@ -66,7 +66,7 @@ def user_signup():
     # Does a user with this email already exist?
     user_email_q = User.query.filter_by(email=email)
 
-    (user_exists,) = db.session.query(user_email_q.exists())
+    (user_exists,) = db.session.query(user_email_q.exists()).first()
 
     if user_exists:
         raise ex.UserExistsError()
