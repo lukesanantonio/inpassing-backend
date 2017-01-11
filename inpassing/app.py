@@ -1,12 +1,10 @@
 # Copyright (c) 2016 Luke San Antonio Bialecki
 # All rights reserved.
 
-from flask import Flask
+from flask import Flask, jsonify
 from flask_jwt_extended import JWTManager
 
-from . import default_config
-from . import models
-from . import views
+from . import default_config, models, views, exceptions as ex
 
 
 def create_app(config_obj=None, suppress_env_config=False, **kwargs):
@@ -29,6 +27,14 @@ def create_app(config_obj=None, suppress_env_config=False, **kwargs):
 
     if config_obj:
         app.config.from_object(config_obj)
+
+    # Handle InPassing Exception types
+    @app.errorhandler(ex.InPassingException)
+    def generic_exception_handler(e):
+        return jsonify({
+            'err': e.get_err(),
+            'msg': e.get_msg()
+        }), e.get_code()
 
     # Init SQLAlchemy
     models.db.init_app(app)
