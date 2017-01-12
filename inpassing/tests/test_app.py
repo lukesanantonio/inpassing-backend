@@ -8,7 +8,7 @@ from fixture import SQLAlchemyFixture
 from flask_testing import TestCase
 
 from . import data as test_data
-from .. import models
+from .. import models, exceptions as ex
 from ..app import create_app
 
 
@@ -100,6 +100,38 @@ class TestApp(TestCase):
         )
 
         self.assertEqual([], user_obj.get('participates'))
+
+    def test_user_create(self):
+        user_init_data = {
+            'first_name': 'Fake',
+            'last_name': 'Name',
+            'email': 'fakeemail@gmail.com',
+            'password': 'password'
+        }
+
+        res = self.client.post(
+            '/users/', content_type='application/json',
+            data=json.dumps(user_init_data)
+        )
+
+        # Assert that the user was created properly, then try to create the same
+        # user and verify that it fails
+
+        self.assert200(res)
+
+        user_init_data['first_name'] = 'New name'
+        user_init_data['last_name'] = 'New last name'
+        user_init_data['password'] = 'even a new password'
+
+        res2 = self.client.post(
+            '/users/', content_type='application/json',
+            data=json.dumps(user_init_data)
+        )
+
+        # The request should have failed because of the user email already being
+        # in use
+        self.assertStatus(res2, 422)
+        self.assertEqual(res2.json['err'], ex.UserExistsError.err)
 
     def test_org_public_interface(self):
         # TODO: Test access to orgs without authentication tokens
