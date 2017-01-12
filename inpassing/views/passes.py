@@ -10,7 +10,8 @@ from flask_redis import FlaskRedis
 from .. import util
 from ..models import db, User, Daystate, Pass
 from ..util import range_inclusive_dates
-from ..view_util import user_is_mod, user_is_participant
+from ..view_util import user_is_mod, user_is_participant, get_user_by_id, \
+    get_field
 from ..worker import LiveOrg, DATE_FMT
 
 pass_api = Blueprint('pass', __name__)
@@ -22,7 +23,7 @@ live_orgs = {}
 @pass_api.route('/', methods=['GET', 'POST'])
 @jwt_required
 def passes():
-    user = User.query.filter_by(id=get_jwt_identity()).first()
+    user = get_user_by_id(get_jwt_identity())
 
     if request.method == 'GET':
         # Filter by org
@@ -65,20 +66,9 @@ def passes():
 
     elif request.method == 'POST':
         # Request a new pass on behalf of the user
-        js_data = request.get_json()
-
         # We verify that the org id is valid when we check the day state.
-        org_id = js_data.get('org_id')
-        if org_id is None:
-            return jsonify({
-                'msg': 'missing org id'
-            }), 422
-
-        state_id = js_data.get('state_id')
-        if state_id is None:
-            return jsonify({
-                'msg': 'missing state id'
-            }), 422
+        org_id = get_field(request, 'org_id')
+        state_id = get_field(request, 'state_id')
 
         # Make sure that state exists
         state_query = Daystate.query.filter_by(id=state_id, org_id=org_id)
@@ -89,11 +79,7 @@ def passes():
                 'msg': 'bad state id'
             }), 422
 
-        spot_num = js_data.get('spot_num')
-        if spot_num is None:
-            return jsonify({
-                'msg': 'missing spot num'
-            }), 422
+        spot_num = get_field(request, 'spot_num')
 
         p = Pass()
         p.org_id = org_id
@@ -101,10 +87,12 @@ def passes():
         p.requested_spot_num = spot_num
         p.request_time = datetime.datetime.now()
 
+        owner_id = get_field(request, 'owner_id')
+
         # What is the authenticated user's relationship to the org?
         if user_is_mod(get_jwt_identity(), org_id):
             # Do whatever they say, now
-            p.owner_id = js_data.get('owner_id') or get_jwt_identity()
+            p.owner_id = owner_id or get_jwt_identity()
             p.assigned_state_id = state_id
             p.assigned_spot_num = spot_num
             p.assigner = get_jwt_identity()
@@ -112,7 +100,6 @@ def passes():
 
         elif user_is_participant(get_jwt_identity(), org_id):
             # They can request a pass but only for themselves
-            owner_id = js_data.get('owner_id')
             if owner_id is not None and owner_id != get_jwt_identity():
                 return jsonify({
                     'msg': 'user cannot request a pass for something else'
@@ -149,12 +136,10 @@ def passes_query(pass_id):
     elif request.method == 'PUT':
         # Only a mod is allowed to re-assign the pass
         if is_mod:
-            js_data = request.get_json()
-
             # Wow, these align so well!
-            new_state_id = js_data.get('state_id')
-            new_spot_num = js_data.get('spot_num')
-            new_owner_id = js_data.get('owner_id')
+            new_state_id = get_field(request, 'state_id')
+            new_spot_num = get_field(request, 'spot_num')
+            new_owner_id = get_field(request, 'owner_id')
 
             modified = False
 

@@ -7,7 +7,8 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from .. import util
 from ..models import db, Org, User, Daystate
 from ..util import jwt_optional
-from ..view_util import user_is_mod, user_is_participant
+from ..view_util import user_is_mod, user_is_participant, get_field, \
+    get_org_by_id, get_user_by_id
 
 org_api = Blueprint('org', __name__)
 
@@ -15,11 +16,7 @@ org_api = Blueprint('org', __name__)
 @org_api.route('/', methods=['POST'])
 @jwt_required
 def create_org():
-    name = request.get_json().get('name', None)
-    if name == None:
-        return jsonify({
-            'msg': 'missing org name'
-        }), 422
+    name = get_field(request, 'name')
 
     org = Org(name=name)
     db.session.add(org)
@@ -37,13 +34,7 @@ def create_org():
 @org_api.route('/<org_id>')
 @jwt_optional
 def orgs_query(org_id):
-    # Find the org by id
-    org = db.session.query(Org).filter_by(id=org_id).first()
-
-    if org is None:
-        return jsonify({
-            'msg': 'org not found'
-        }), 404
+    org = get_org_by_id(org_id)
 
     # Include basic information for all users
     ret = {
@@ -64,11 +55,7 @@ def orgs_search():
 # Org participants
 @org_api.route('/<org_id>/participants', methods=['GET', 'POST'])
 def org_participants(org_id):
-    org = Org.query.filter_by(id=org_id).first()
-    if org == None:
-        return jsonify({
-            'msg': 'org not found'
-        }), 404
+    org = get_org_by_id(org_id)
 
     client_user_id = get_jwt_identity()
 
@@ -88,21 +75,11 @@ def org_participants(org_id):
         }), 403
 
     if request.method == 'POST':
-        js = request.get_json()
-
         # Make sure we were given a valid id
-        participant_id = js.get('user_id')
-        if participant_id is None:
-            return jsonify({
-                'msg': 'missing user_id'
-            }), 422
+        participant_id = get_field(request, 'user_id')
 
         # And that the ID represents a valid user
-        participant = User.query.filter_by(id=participant_id).first()
-        if participant is None:
-            return jsonify({
-                'msg': 'unknown user {}'.format(participant_id)
-            }), 422
+        participant = get_user_by_id(participant_id)
 
         # Only allow regular participants to add themselves.
         if not mod_request and participant_id != client_user_id:
@@ -139,15 +116,10 @@ def org_participants(org_id):
 @org_api.route('/<org_id>/participants/<user_id>')
 @jwt_required
 def org_participants_query(org_id, user_id):
-    # Find the org in question
-    org = Org.query.filter_by(id=org_id).first()
-    if org is None:
-        return jsonify({
-            'msg': 'org not found'
-        }), 404
+    org = get_org_by_id(org_id)
 
     # Is the user a participant?
-    user = User.query.filter_by(user_id).first()
+    user = get_user_by_id(user_id)
 
     if user in org.participants:
         participating = True
@@ -194,11 +166,7 @@ def org_participants_query(org_id, user_id):
 @org_api.route('/<org_id>/moderators', methods=['GET', 'POST'])
 @jwt_required
 def org_moderators(org_id):
-    org = Org.query.filter_by(id=org_id).first()
-    if org is None:
-        return jsonify({
-            'msg': 'org not found'
-        }), 404
+    org = get_org_by_id(org_id)
 
     client_user_id = get_jwt_identity()
     if request.method == 'POST':
@@ -220,11 +188,7 @@ def org_moderators(org_id):
             }), 422
 
         # And that the ID represents a valid user
-        mod = User.query.filter_by(id=mod_id).first()
-        if mod is None:
-            return jsonify({
-                'msg': 'unknown user {}'.format(mod_id)
-            }), 422
+        mod = get_user_by_id(mod_id)
 
         # Make sure that the participant to be is not already a participant
         if mod in org.mods:
@@ -250,12 +214,7 @@ def org_moderators(org_id):
 @org_api.route('/<org_id>/moderators/<user_id>')
 @jwt_required
 def org_moderators_query(org_id, user_id):
-    # Find the org in question
-    org = Org.query.filter_by(id=org_id).first()
-    if org is None:
-        return jsonify({
-            'msg': 'org not found'
-        }), 404
+    org = get_org_by_id(org_id)
 
     # Does our client moderate the org?
     client_user_id = get_jwt_identity()
@@ -299,21 +258,9 @@ def org_daystates(org_id):
             }), 403
 
         # Post a new day state
-        data = request.get_json()
-
-        if 'identifier' not in data:
-            return jsonify({
-                'msg': 'missing daystate identifier'
-            }), 422
-
-        if 'greeting' not in data:
-            return jsonify({
-                'msg': 'missing daystate greeting'
-            }), 422
-
         daystate = Daystate(org_id=org_id,
-                            identifier=data['identifier'],
-                            greeting=data['greeting'])
+                            identifier=get_field(request, 'identifier'),
+                            greeting=get_field(request, 'greeting'))
         db.session.add(daystate)
         db.session.commit()
 
