@@ -4,7 +4,7 @@
 from flask import Blueprint, jsonify, request, current_app, url_for
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from .. import util
+from .. import util, exceptions as ex
 from ..models import db, Org, User, Daystate
 from ..util import jwt_optional
 from ..view_util import user_is_mod, user_is_participant, get_field, \
@@ -68,11 +68,10 @@ def org_participants(org_id):
         mod_request = False
     else:
         # Otherwise fuck'em
-        return jsonify({
-            'msg': 'user {} must moderate or participate in org {}'.format(
-                client_user_id, org_id
-            )
-        }), 403
+        raise ex.Forbidden(
+            'user {} must moderate or participate in org {}'
+            .format(client_user_id, org_id)
+        )
 
     if request.method == 'POST':
         # Make sure we were given a valid id
@@ -83,9 +82,10 @@ def org_participants(org_id):
 
         # Only allow regular participants to add themselves.
         if not mod_request and participant_id != client_user_id:
-            return jsonify({
-                'msg': 'participant {} should only be adding itself'
-            }), 422
+            raise ex.Forbidden(
+                'participant {} should only be adding itself'
+                .format(participant_id)
+            )
 
         # Make sure that the participant to be is not already a participant
         if participant in org.participants:
@@ -110,7 +110,7 @@ def org_participants(org_id):
             ), 200
         else:
             # They know what they did wrong.
-            return '', 403
+            raise ex.Forbidden('Regular users cannot make this request')
 
 
 @org_api.route('/<org_id>/participants/<user_id>')
@@ -155,11 +155,11 @@ def org_participants_query(org_id, user_id):
         else:
             return no_part_ret
     else:
-        return jsonify({
-            'msg': 'user {} must moderate or participate in org {}'.format(
+        raise ex.Forbbiden(
+            'user {} must moderate or participate in org {}'.format(
                 client_user_id, org_id
             )
-        }), 403
+        )
 
 
 # Org moderators
@@ -172,11 +172,11 @@ def org_moderators(org_id):
     if request.method == 'POST':
         # The client must be a mod
         if not user_is_mod(client_user_id, org_id):
-            return jsonify({
-                'msg': 'user {} must moderate org {}'.format(
+            raise ex.Forbidden(
+                'user {} must moderate org {}'.format(
                     client_user_id, org_id
                 )
-            }), 403
+            )
 
         js = request.get_json()
 
@@ -220,9 +220,9 @@ def org_moderators_query(org_id, user_id):
     client_user_id = get_jwt_identity()
     if not user_is_mod(client_user_id, org_id):
         # Get outta here
-        return jsonify({
-            'msg': 'user {} must moderate org {}'.format(client_user_id, org_id)
-        }), 403
+        raise ex.Forbidden(
+            'user {} must moderate org {}'.format(client_user_id, org_id)
+        )
 
     # Does the given user moderate?
     user = User.query.filter_by(id=user_id).first()
@@ -253,9 +253,9 @@ def org_daystates(org_id):
     if request.method == 'POST':
         # The user must be a mod
         if not user_is_mod(user_id, org_id):
-            return jsonify({
-                'msg': 'user {} must mod org {}'.format(user_id, org_id)
-            }), 403
+            raise ex.Forbidden(
+                'user {} must mod org {}'.format(user_id, org_id)
+            )
 
         # Post a new day state
         daystate = Daystate(org_id=org_id,
@@ -273,10 +273,10 @@ def org_daystates(org_id):
         # The user must be a participant or mod.
         if not (user_is_mod(user_id, org_id) or
                     user_is_participant(user_id, org_id)):
-            return jsonify({
-                'msg': ('user {} not allowed to query daystates for org {}'
-                        .format(user_id, org_id))
-            }), 403
+            raise ex.Forbidden(
+                'user {} not allowed to query daystates for org {}'
+                .format(user_id, org_id)
+            )
 
         # Query org day states by org id
         daystates = Daystate.query.filter_by(org_id=org_id).all()
@@ -311,9 +311,9 @@ def org_daystates_query(org_id, daystate_id):
 
         # Make sure the user is mod
         if not user_is_mod(user_id, org_id):
-            return jsonify({
-                'msg': 'user {} must moderate org {}'.format(user_id, org_id)
-            }), 403
+            raise ex.Forbidden(
+                'user {} must moderate org {}'.format(user_id, org_id)
+            )
 
         js = request.get_json()
         new_identifier = js.get('identifier')
@@ -332,11 +332,11 @@ def org_daystates_query(org_id, daystate_id):
 
         if not (user_is_participant(user_id, org_id) or
                     user_is_mod(user_id, org_id)):
-            return jsonify({
-                'msg': 'user {} must mod or participate in org {}'.format(
+            raise ex.Forbidden(
+                'user {} must mod or participate in org {}'.format(
                     user_id, org_id
                 )
-            }), 403
+            )
 
     # If they made it this far they are allowed to see the day state.
     return jsonify(util.daystate_dict(daystate)), 200
@@ -348,11 +348,11 @@ def org_daystates_current(org_id):
     user_id = get_jwt_identity()
     if not (user_is_participant(user_id, org_id) or
                 user_is_mod(user_id, org_id)):
-        return jsonify({
-            'msg': 'user {} must mod or participate in org {}'.format(
+        raise ex.Forbidden(
+            'user {} must mod or participate in org {}'.format(
                 user_id, org_id
             )
-        }), 403
+        )
 
     # TODO: Tie this into the live org / worker implementation somehow!
     daystate = Daystate.query.filter_by(org_id=org_id).first()
