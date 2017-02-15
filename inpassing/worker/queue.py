@@ -217,7 +217,10 @@ class LiveOrg:
                            self._active_queue_list())
 
     def obj_token(self, ty, id, r=None):
-        """Returns the token of an object given its ID and type."""
+        """Returns the token of an object given its ID and type.
+
+        It does so by querying into a specific redis set (hash) based on the
+        type of the object. If the token doesn't exist, a new token is added."""
         # Possibly use a different redis interface, like a pipeline
         if r == None:
             r = self.r
