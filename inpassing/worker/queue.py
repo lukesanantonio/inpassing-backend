@@ -286,6 +286,10 @@ class LiveOrg:
                         # TODO: Add a stderr warning here.
                         pass
 
+                    # Make sure we move them to the back of the queue, if they
+                    # refreshed their token it means they should go to the back
+                    # of the line.
+
                     # Remove the object.
                     pipe.lrem(queue_name, 0, obj_str)
 
