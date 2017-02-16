@@ -13,7 +13,7 @@ def create_app(config_obj=None, suppress_env_config=False, **kwargs):
     app.register_blueprint(views.user_api, url_prefix='/api/v1/users')
     app.register_blueprint(views.pass_api, url_prefix='/api/v1/passes')
     app.register_blueprint(views.org_api, url_prefix='/api/v1/orgs')
-    app.register_blueprint(views.admin_www, url_prefix='/')
+    app.register_blueprint(views.admin_www)
 
     app.config.from_object(default_config)
 
