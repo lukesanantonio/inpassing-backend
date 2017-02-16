@@ -10,9 +10,10 @@ from . import default_config, models, views, exceptions as ex
 def create_app(config_obj=None, suppress_env_config=False, **kwargs):
     app = Flask(__name__, **kwargs)
 
-    app.register_blueprint(views.user_api, url_prefix='/users')
-    app.register_blueprint(views.pass_api, url_prefix='/passes')
-    app.register_blueprint(views.org_api, url_prefix='/orgs')
+    app.register_blueprint(views.user_api, url_prefix='/api/v1/users')
+    app.register_blueprint(views.pass_api, url_prefix='/api/v1/passes')
+    app.register_blueprint(views.org_api, url_prefix='/api/v1/orgs')
+    app.register_blueprint(views.admin_www, url_prefix='/')
 
     app.config.from_object(default_config)
 
