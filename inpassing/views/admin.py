@@ -80,6 +80,7 @@ def signup():
 
         return redirect(url_for('.user_home'))
 
+    # TODO: Eventually this should be on a field-by-field basis.
     errors = []
     for field, errs in form.errors.items():
         errors.extend(errs)
