@@ -1,13 +1,16 @@
 # Copyright (c) 2016 Luke San Antonio Bialecki
 # All rights reserved.
 
+from urllib.parse import urlparse, urljoin
 from datetime import timedelta
 from functools import wraps
 
+from flask import request, redirect, url_for
 from flask_jwt_extended import utils
 from flask_jwt_extended.exceptions import NoAuthorizationError
 from flask_jwt_extended.utils import ctx_stack
-
+from flask_wtf import FlaskForm
+from wtforms import HiddenField
 
 def jwt_optional(fn):
     @wraps(fn)
@@ -39,6 +42,36 @@ def range_inclusive_dates(start, end):
     date_range = end - start
     for day_i in range(date_range.days + 1):
         yield start + timedelta(days=day_i)
+
+
+# Shamelessly stolen from http://flask.pocoo.org/snippets/63/
+def is_safe_url(target):
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    # @Production: Only allow https
+    return test_url.scheme in ('http', 'https') and \
+           ref_url.netloc == test_url.netloc
+
+
+def get_redirect_target():
+    # Don't bother with the referrer for now
+    target = request.args.get('next')
+    return target if is_safe_url(target) else None
+
+
+class RedirectForm(FlaskForm):
+    next = HiddenField()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.next.data:
+            self.next.data = get_redirect_target()
+
+    def redirect(self, endpoint='index', **values):
+        if self.next.data != '' and is_safe_url(self.next.data):
+            return redirect(self.next.data)
+        target = get_redirect_target()
+        return redirect(target or url_for(endpoint, **values))
 
 
 def daystate_dict(daystate):
