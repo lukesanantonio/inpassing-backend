@@ -3,9 +3,10 @@
 
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, validators
+from .util import RedirectForm
 
 
-class LoginForm(FlaskForm):
+class LoginForm(RedirectForm):
     email = StringField('Email', validators=[validators.email()])
     password = PasswordField('Password', validators=[validators.length(6)])
 
