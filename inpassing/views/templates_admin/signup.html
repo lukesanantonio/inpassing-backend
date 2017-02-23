@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Signup{% endblock %}
+{% block body %}
+{% for err in errors %}
+<p>{{ err }}</p>
+{% endfor %}
+<form method="post" action="/signup">
+    {{ form.csrf_token() }}
+    {{ form.first_name.label }} {{ form.first_name() }}
+    {{ form.last_name.label }} {{ form.last_name() }}
+    {{ form.email.label }} {{ form.email() }}
+    {{ form.password.label }} {{ form.password() }}
+    {{ form.confirm.label }} {{ form.confirm() }}
+    <input type="submit" value="Signup"/>
+</form>
+{% endblock %}
+
