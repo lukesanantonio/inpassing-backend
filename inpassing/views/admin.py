@@ -3,10 +3,20 @@
 
 import bcrypt
 from flask import Blueprint, render_template, request, redirect, url_for
+from flask_login import LoginManager, login_user, login_required, logout_user
 from ..models import db, User
 from ..forms import LoginForm, SignupForm
+from ..util import get_redirect_target
 
 admin_www = Blueprint('admin', __name__, template_folder='templates_admin')
+
+login_manager = LoginManager()
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.filter_by(id=int(user_id)).first()
+
 
 @admin_www.route('/')
 def index():
@@ -14,15 +24,31 @@ def index():
 
 
 @admin_www.route('/home', methods=['GET'])
+@login_required
 def user_home():
     return render_template('home.html')
+
+
+@admin_www.route('/logout', methods=['GET', 'POST'])
+def logout():
+    logout_user()
+    redirect_url = get_redirect_target()
+    return redirect(redirect_url or url_for('.index'))
 
 
 @admin_www.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
     if form.validate_on_submit():
-        return redirect('/')
+        # Form is validated, try to log in
+        user = User.query.filter_by(email=form.email.data).first()
+        in_pass = form.password.data.encode('ascii')
+        if user and bcrypt.checkpw(in_pass, user.password):
+            # Authenticated!
+            login_user(user)
+
+            # Redirect home or elsewhere
+            return form.redirect('.user_home')
     return render_template('login.html', form=form)
 
 
@@ -50,7 +76,8 @@ def signup():
         db.session.add(new_user)
         db.session.commit()
 
-        # TODO: Log in the user
+        login_user(new_user)
+
         return redirect(url_for('.user_home'))
 
     errors = []

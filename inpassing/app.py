@@ -46,6 +46,9 @@ def create_app(config_obj=None, suppress_env_config=False, **kwargs):
     # Init JWT Helper
     jwt = JWTManager(app)
 
+    # Init login manager
+    views.login_manager.init_app(app)
+
     # Users are verified by ID
     @jwt.user_identity_loader
     def user_identity(user):
