@@ -2,7 +2,7 @@
 {% block title %}Login{% endblock %}
 {% block body %}
 <form method="post" action="/login">
-    {{ form.csrf_token() }}
+    {{ form.hidden_tag() }}
     {{ form.email.label }} {{ form.email() }}
     {{ form.password.label }} {{ form.password() }}
     <input type="submit" value="Login"/>

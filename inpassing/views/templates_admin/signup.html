@@ -5,7 +5,7 @@
 <p>{{ err }}</p>
 {% endfor %}
 <form method="post" action="/signup">
-    {{ form.csrf_token() }}
+    {{ form.hidden_tag() }}
     {{ form.first_name.label }} {{ form.first_name() }}
     {{ form.last_name.label }} {{ form.last_name() }}
     {{ form.email.label }} {{ form.email() }}
