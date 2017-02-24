@@ -11,6 +11,9 @@ from sqlalchemy.sql import and_
 import inpassing
 from inpassing.models import db, Org, User, Pass
 
+from fixture import SQLAlchemyFixture
+from inpassing.tests.data import all_data
+
 # Create a test app
 app = inpassing.create_app(instance_relative_config=True)
 
@@ -22,6 +25,13 @@ def create_schema():
     """Create DB schema with SQLAlchemy"""
 
     inpassing.db.create_all()
+
+
+@manager.command
+def init_test_data():
+    fix = SQLAlchemyFixture(env=inpassing.models, engine=db.engine)
+    data = fix.data(*all_data)
+    data.setup()
 
 
 def parse_field(prompt_fmt, cur_value):
