@@ -9,10 +9,7 @@ from flask_script import Manager
 from sqlalchemy.sql import and_
 
 import inpassing
-from inpassing.models import db, Org, User, Pass
-
-from fixture import SQLAlchemyFixture
-from inpassing.tests.data import all_data
+from inpassing.models import db, Org, User, Pass, Daystate
 
 # Create a test app
 app = inpassing.create_app(instance_relative_config=True)
@@ -29,9 +26,40 @@ def create_schema():
 
 @manager.command
 def init_test_data():
-    fix = SQLAlchemyFixture(env=inpassing.models, engine=db.engine)
-    data = fix.data(*all_data)
-    data.setup()
+
+    org = Org(name='Locust Valley High School')
+    db.session.add(org)
+
+    db.session.commit()
+
+    a_day = Daystate(org_id=org.id, identifier='A', greeting='Today is an A day')
+    b_day = Daystate(org_id=org.id, identifier='B', greeting='Today is an B day')
+
+    mod = User(first_name='Moddy', last_name='McModerator',
+               email='admin@inpassing.com',
+               password=b'$2b$12$tb.KU6CZmjXFkivFD3qSAeQW.V3JopcaPVzQK01IIiyejlryshcMC')
+    org.mods.append(mod)
+
+    user = User(first_name='John', last_name='Smitch',
+                email='person@inpassing.com',
+                password=b'$2b$12$tb.KU6CZmjXFkivFD3qSAeQW.V3JopcaPVzQK01IIiyejlryshcMC')
+    org.participants.append(user)
+
+    db.session.add_all([a_day, b_day, mod, user])
+
+    db.session.commit()
+
+    user_pass = Pass(org_id=org.id, owner_id=user.id,
+                     requested_state_id=a_day.id, requested_spot_num=20,
+                     request_time=datetime.datetime.now(),
+                     assigned_state_id=a_day.id, assigned_spot_num=13,
+                     assigned_time=datetime.datetime.now())
+    db.session.add(user_pass)
+    other_pass = Pass(org_id=org.id, owner_id=user.id,
+                     requested_state_id=b_day.id, requested_spot_num=13,
+                     request_time=datetime.datetime.now())
+    db.session.add(other_pass)
+
     db.session.commit()
 
 
