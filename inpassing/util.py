@@ -79,7 +79,7 @@ def daystate_dict(daystate):
     return {
         'id': daystate.id,
         'org_id': daystate.org_id,
-        'identifier': daystate.identifer,
+        'identifier': daystate.identifier,
         'greeting': daystate.greeting
     }
 
