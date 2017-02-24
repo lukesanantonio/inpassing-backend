@@ -12,7 +12,7 @@ def query_user_passes(session, user_id, verified=None):
         return session.query(Pass).filter(
             and_(Pass.owner_id == user_id, Pass.assigned_time != None)
         ).all()
-    elif not verified:
+    elif not verified and verified is not None:
         # Only non-verified passes
         return session.query(Pass).filter(
             and_(Pass.owner_id == user_id, Pass.assigned_time == None)
@@ -28,7 +28,7 @@ def query_org_passes(session, org_id, verified=None):
         return session.query(Pass).filter(
             and_(Pass.org_id == org_id, Pass.assigned_time != None)
         ).all()
-    elif not verified:
+    elif not verified and verified is not None:
         # Only non-verified passes
         return session.query(Pass).filter(
             and_(Pass.org_id == org_id, Pass.assigned_time == None)
