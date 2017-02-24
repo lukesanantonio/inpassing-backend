@@ -32,6 +32,7 @@ def init_test_data():
     fix = SQLAlchemyFixture(env=inpassing.models, engine=db.engine)
     data = fix.data(*all_data)
     data.setup()
+    db.session.commit()
 
 
 def parse_field(prompt_fmt, cur_value):
