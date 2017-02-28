@@ -332,7 +332,7 @@ def lend_pass(pass_id):
         ret_obj = {}
         for date in range_inclusive_dates(start_date, end_date):
             enqueued = live_org.enqueue_pass_lend(date, pass_obj.id)
-            ret_obj[datetime.date.strftime(DATE_FMT)] = {
+            ret_obj[date.strftime(DATE_FMT)] = {
                 'enqueued': enqueued
             }
 
@@ -350,7 +350,7 @@ def unlend_pass(pass_id):
         ret_obj = {}
         for date in range_inclusive_dates(start_date, end_date):
             dequeued = live_org.dequeue_pass_lend(date, pass_obj.id)
-            ret_obj[datetime.date.strftime(DATE_FMT)] = {
+            ret_obj[date.strftime(DATE_FMT)] = {
                 'dequeued': dequeued
             }
         return jsonify(ret_obj), 200
