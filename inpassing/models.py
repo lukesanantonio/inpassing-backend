@@ -27,7 +27,6 @@ org_mods = db.Table('org_mods',
                               primary_key=True)
                     )
 
-
 class Org(db.Model):
     __tablename__ = 'orgs'
 
@@ -40,14 +39,6 @@ class Org(db.Model):
     # For example: "Today is an {} day" where state strings are A or B. The {}
     # may not be the final implementation of formatting."
     day_state_greeting_fmt = db.Column(db.String(255))
-
-    ###
-    # Idea: Put parking rules and manual overrides of the day state in redis and
-    # set the overrides to expire after a while
-    ###
-
-    # Rules as a JSON object (stored as a string).
-    parking_rules = db.Column(db.Text)
 
     ## Relationships
     # An org has a finite set of day states.
