@@ -222,12 +222,12 @@ class LiveOrg:
         It does so by querying into a specific redis set (hash) based on the
         type of the object. If the token doesn't exist, a new token is added."""
         # Possibly use a different redis interface, like a pipeline
-        if r == None:
+        if r is None:
             r = self.r
 
         # Which hash has our token?
         hash_str = self._token_hash(ty)
-        if hash_str == None:
+        if hash_str is None:
             return None
 
         # Add a token if it's not already there.
@@ -239,7 +239,7 @@ class LiveOrg:
     def live_obj(self, ty, id, r=None):
         """Returns a live object (with a token) from an ID and type."""
         token = self.obj_token(ty, id, r)
-        if token == None:
+        if token is None:
             # stderr warn?
             return None
 
@@ -274,7 +274,7 @@ class LiveOrg:
 
             pipe.multi()
 
-            for obj_str in queue:
+            for obj_str in queue_contents:
                 # Get the ID and token from the string
                 cur_obj = LiveObj.fromstring(obj_str)
                 if cur_obj.id == new_obj.id and cur_obj.token != new_obj.token:
@@ -296,7 +296,7 @@ class LiveOrg:
                     # Add the obj to the back of the queue with a new token.
                     pipe.lpush(queue_name, bytes(new_obj))
 
-        self.r.transaction(refresh_token, queue_name)
+        self.r.transaction(refresh_obj, queue_name)
 
     def refresh_user(self, date, user_id):
         """Updates a borrow token and moves it to the back of the queue."""
@@ -348,7 +348,7 @@ class LiveOrg:
         # TODO: Remove objects with an old token (do this by searching the
         # list and looking at every obj. We could issue a warning if the token
         # is different.
-        removed = pipe.lrem(queue, 1, bytes(obj))
+        removed = self.r.lrem(queue, 1, bytes(obj))
         return True if removed > 0 else False
 
     def enqueue_user_borrow(self, date, user_id):
