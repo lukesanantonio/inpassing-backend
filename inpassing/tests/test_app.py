@@ -21,6 +21,8 @@ class testing_config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 
+API_PREFIX = '/api/v1'
+
 def auth_headers(token):
     return {'Authorization': 'Bearer ' + token}
 
@@ -46,7 +48,7 @@ class TestApp(TestCase):
 
     def auth(self, user):
         res = self.client.post(
-            '/users/auth', content_type='application/json',
+            API_PREFIX + '/users/auth', content_type='application/json',
             data='{"email": "' + user.email + '", "password": "password"}'
         )
         self.assert200(res)
@@ -58,7 +60,7 @@ class TestApp(TestCase):
 
     def test_bad_auth(self):
         res = self.client.post(
-            '/users/auth', content_type='application/json',
+            API_PREFIX + '/users/auth', content_type='application/json',
             data='{"email": "madeupemail", "password": "password"}'
         )
         self.assert401(res)
@@ -66,7 +68,8 @@ class TestApp(TestCase):
     def _test_user(self, user, token=None):
         token = token or self.auth(user)
 
-        res = self.client.get('/users/me', headers=auth_headers(token))
+        res = self.client.get(API_PREFIX + '/users/me',
+                              headers=auth_headers(token))
         self.assert200(res)
         self.assertEqual('application/json', res.content_type)
 
@@ -110,7 +113,7 @@ class TestApp(TestCase):
         }
 
         res = self.client.post(
-            '/users/', content_type='application/json',
+            API_PREFIX + '/users/', content_type='application/json',
             data=json.dumps(user_init_data)
         )
 
@@ -124,7 +127,7 @@ class TestApp(TestCase):
         user_init_data['password'] = 'even a new password'
 
         res2 = self.client.post(
-            '/users/', content_type='application/json',
+            API_PREFIX + '/users/', content_type='application/json',
             data=json.dumps(user_init_data)
         )
 
@@ -139,7 +142,7 @@ class TestApp(TestCase):
 
     def test_org_create(self):
         # A regular user should not be able to get this
-        self.assert401(self.client.post('/orgs/'))
+        self.assert401(self.client.post(API_PREFIX + '/orgs/'))
 
         # Authenticate as a regular user, then try it again.
         token = self.auth(test_data.User.user)
@@ -147,7 +150,8 @@ class TestApp(TestCase):
         # This token is good as a regular user, create an org and see what
         # happens.
         ORG_NAME = 'My First Org'
-        res = self.client.post('/orgs/', content_type='application/json',
+        res = self.client.post(API_PREFIX + '/orgs/',
+                               content_type='application/json',
                                data='{"name": "' + ORG_NAME + '"}',
                                headers=auth_headers(token))
 
@@ -173,7 +177,7 @@ class TestApp(TestCase):
         # Get the moderator object through this interface, which should only
         # work if we are a moderator of that org.
         res = self.client.get(
-            '/orgs/{}/moderators/{}'.format(org_id, me_obj['id']),
+            API_PREFIX + '/orgs/{}/moderators/{}'.format(org_id, me_obj['id']),
             headers=auth_headers(token)
         )
 
