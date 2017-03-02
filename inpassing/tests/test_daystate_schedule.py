@@ -2,7 +2,8 @@
 # All rights reserved.
 
 import unittest
-from ..worker.daystate import current_state
+from datetime import timedelta, datetime
+from ..worker.daystate import current_state, num_periods
 
 
 class TestDaystateSchedule(unittest.TestCase):
@@ -32,3 +33,26 @@ class TestDaystateSchedule(unittest.TestCase):
         self.assertEqual(current_state(['A', 'B', 'C', 'D'], 0, 10), 'C')
         self.assertEqual(current_state(['A', 'B', 'C', 'D'], 0, 11), 'D')
 
+    def test_num_periods(self):
+        now = datetime.now()
+        self.assertAlmostEqual(num_periods(timedelta(days=1), now, now), 0.0)
+
+        self.assertAlmostEqual(num_periods(
+            timedelta(days=1), now, now + timedelta(days=1)
+        ), 1.0)
+
+        self.assertAlmostEqual(num_periods(
+            timedelta(days=1), now, now + timedelta(days=2)
+        ), 2.0)
+
+        self.assertAlmostEqual(num_periods(
+            timedelta(days=1), now, now + timedelta(days=3)
+        ), 3.0)
+
+        self.assertAlmostEqual(num_periods(
+            timedelta.max, now, now + timedelta(days=1)
+        ), 0.0)
+
+        self.assertAlmostEqual(num_periods(
+            timedelta(seconds=3600), now, now + timedelta(days=1)
+        ), 24.0)
