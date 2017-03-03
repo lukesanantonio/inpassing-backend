@@ -60,6 +60,34 @@ def _obj_exists(r, queue, obj):
     return True if bytes(obj) in contents else False
 
 
+class FixedDaystate:
+    def __init__(self, date, state_id):
+        self.date = date
+        self.state_id = state_id
+
+    @classmethod
+    def fromstring(cls, str):
+        date, state_id = tuple(str.split(':'))
+        return FixedDaystate(datetime.strptime(date, DATE_FMT), int(state_id))
+
+    def __str__(self):
+        return self.date.strftime(DATE_FMT) + ':' + str(self.state_id)
+
+    def __eq__(self, other):
+        return (self.date.year == other.date.year and
+                self.date.month == other.date.month and
+                self.date.day == other.date.day and
+                self.state_id == other.state_id)
+
+    def __ne(self, other):
+        return not self == other
+
+
+class InvalidFixDate(Exception):
+    def __init__(self):
+        pass
+
+
 class LiveOrg:
     """This class manages live org data.
 
@@ -107,6 +135,9 @@ class LiveOrg:
     def _pass_token_hash(self):
         """Returns the name of the hash containing pass tokens."""
         return str(self.org_id) + ':pass-tokens'
+
+    def _fixed_daystates_list(self):
+        return str(self.org_id) + ':fixed-daystates'
 
     def _token_hash(self, ty):
         if ty == ObjType.User:
@@ -380,3 +411,28 @@ class LiveOrg:
         return self._dequeue_obj(
             self._lend_queue(date), self.live_obj(ObjType.Pass, pass_id)
         )
+
+    def push_fixed_daystate(self, new_fixed_daystate):
+        daystate_queue = self._fixed_daystates_list()
+
+        def do_push(pipe):
+            # Make sure the new date is more recent then the previous date in
+            # the queue. If we go backwards in time, expect issues.
+
+            current_fix = pipe.lindex(daystate_queue, 0)
+            if current_fix is not None:
+                current_fixed_daystate = FixedDaystate.fromstring(current_fix)
+                if new_fixed_daystate.date < current_fixed_daystate.date:
+                    # The new fix comes before the one already there.
+
+                    # Either throw an error or adjust the last fix to match
+                    # what this fix will effect. This seems unexpected, so just
+                    # throw an error for now.
+                    raise InvalidFixDate()
+
+            # Start buffered mode because if we are here we are ready to push
+            # the new fixed daystate.
+            pipe.multi()
+            pipe.lpush(daystate_queue, str(new_fixed_daystate))
+
+        self.r.transaction(do_push, daystate_queue)
