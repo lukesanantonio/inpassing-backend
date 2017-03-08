@@ -60,6 +60,51 @@ def _obj_exists(r, queue, obj):
     return True if bytes(obj) in contents else False
 
 
+# The set of patterns include anything that can be used to identify a day
+# for example: monday, tuesday, 4 for the fourth of day of every month.
+
+# Rules identify who can park on a matching day and what spot if necessary.
+# They include none, indicating parking should not be managed on a given day,
+# next to iterate over all states, or an expression that maps spots on a
+# particular daystates to other spots.
+
+# Example patterns
+
+# One state for every weekday, parking is not managed by the app on weekends:
+# [('monday', 1), ('tuesday', 2), ('wednesday', 3), ('thursday', 4),
+#  ('friday', 5), ('saturday', 'none'), ('sunday', 'none')]
+
+# Alternating A day and B days excluding weekends:
+# [('monday', 'next'), ('tuesday', 'next'), ('wednesday', 'next'),
+# ('thursday', 'next), ('friday', 'next'), ('saturday', 'none'),
+# ('sunday', 'none')]
+
+# Or more simply
+# [('saturday', 'none'), ('sunday', 'none'), ('*', 'next')]
+
+# Rules are processed by finding the first matching pattern and applying the
+# rule or list of rules. Spot is determined from the first matching rule.
+
+# Rule syntax
+# 'next' OR
+# 'none' OR
+# state id (int) OR
+# <state_id>:<spot mapping set> (string)
+
+# spot mapping sets are a comma separated list of spot mapping expressions with
+# the following syntax (start_spot_num and end_spot_num are inclusive):
+# <start_spot_num>([-<end_spot_num>[(<spot_offset>)]]|[=<adjusted_spot_num>)
+
+# Example:
+# This maps spots 1-3 to 2-4: 1=2,2=3,3=4. It can also be written: 1-3(1)
+
+# Example:
+# On weekdays that are not state 1, allow spots 1-20 (of state 1) to park in
+# spots 41-60. On state 1 days, next gives state 1 passs the right to park in
+# their regular spot. On state 2 days, the second rule is used.
+# This is the rule set:
+# [('saturday', 'none'), ('sunday', 'none'), ('*', ['next', '1:1-20(40)'])]
+
 class FixedDaystate:
     def __init__(self, date, state_id):
         self.date = date
