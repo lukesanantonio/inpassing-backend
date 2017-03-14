@@ -124,7 +124,7 @@ class FixedDaystate:
                 self.date.day == other.date.day and
                 self.state_id == other.state_id)
 
-    def __ne(self, other):
+    def __ne__(self, other):
         return not self == other
 
 
