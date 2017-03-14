@@ -4,6 +4,8 @@
 from datetime import datetime
 from enum import Enum
 
+import pyparsing as pp
+
 DATE_FMT = '%Y-%m-%d'
 
 
@@ -104,6 +106,134 @@ def _obj_exists(r, queue, obj):
 # their regular spot. On state 2 days, the second rule is used.
 # This is the rule set:
 # [('saturday', 'none'), ('sunday', 'none'), ('*', ['next', '1:1-20(40)'])]
+
+# Parse integers as numbers not strings
+integer = pp.Word(pp.nums).setParseAction(lambda toks: int(toks[0]))
+
+spot_offset = pp.Literal('(') + integer('spot_offset') + ')'
+spot_assignment = pp.Literal('=') + integer('spot_assignment')
+
+# A mapping from a range or spots.
+spot_mapping = integer('start_spot_num') + \
+               (pp.Optional(pp.Literal('-') + integer('end_spot_num') +
+                            pp.Optional(spot_offset)) ^
+                pp.Optional(spot_offset ^ spot_assignment))
+
+# results[0] is the state id
+# results[1:] are parse results of each spot mapping
+rule_syntax = integer('state_id') + \
+              pp.Optional(pp.Suppress(':') + pp.Group(spot_mapping) +
+                          pp.ZeroOrMore(pp.Suppress(',') +
+                                        pp.Group(spot_mapping))) ^ \
+              'none' ^ 'next'
+
+
+class SpotAdjustmentType(Enum):
+    Fixed = 1
+    Offset = 2
+
+
+class DaystateSpotMapping:
+    def __init__(self, start, end=None, value=0,
+                 adjust_type=SpotAdjustmentType.Offset):
+        self.start = start
+        self.end = end or start
+        self.value = value
+        self.adjust_type = adjust_type
+
+        if self.start != self.end:
+            assert(self.adjust_type != SpotAdjustmentType.Fixed)
+
+    def includes_spot_num(self, spot_num):
+        return self.start <= spot_num <= self.end
+
+    def adjust_spot_num(self, spot_num):
+        if not self.includes_spot_num(spot_num):
+            return None
+
+        if self.adjust_type == SpotAdjustmentType.Offset:
+            return spot_num + self.value
+
+        elif self.adjust_type == SpotAdjustmentType.Fixed:
+            assert(self.start == self.end)
+            return self.value
+
+    def __str__(self):
+        if self.adjust_type == SpotAdjustmentType.Offset:
+            if self.value == 0:
+                if self.start == self.end:
+                    return str(self.start)
+                else:
+                    return '{}-{}'.format(self.start, self.end)
+            else:
+                if self.start == self.end:
+                    return '{}({})'.format(self.start, self.value)
+                else:
+                    return '{}-{}({})'.format(self.start, self.end, self.value)
+
+        elif self.adjust_type == SpotAdjustmentType.Fixed:
+            if self.start == self.end:
+                return '{}={}'.format(self.start, self.value)
+
+        raise RuntimeError('Unable to __str__ify an invalid rule')
+
+    @classmethod
+    def fromdict(cls, dict):
+        if 'spot_assignment' in dict:
+            # Only use fixed mode if we were given an adjusted spot num.
+            return DaystateSpotMapping(dict['start_spot_num'],
+                                       dict.get('end_spot_num'),
+                                       dict['spot_assignment'],
+                                       SpotAdjustmentType.Fixed)
+        else:
+            # Use spot offset if it's there, but zero will work if it's missing
+            return DaystateSpotMapping(dict['start_spot_num'],
+                                       dict.get('end_spot_num'),
+                                       dict.get('spot_offset', 0),
+                                       SpotAdjustmentType.Offset)
+
+    @classmethod
+    def fromstring(cls, instring):
+        return DaystateSpotMapping.fromdict(
+            spot_mapping.parseString(instring).asDict()
+        )
+
+
+class DaystateRule:
+    def __init__(self, state_id, mappings=None):
+        self.state_id = state_id
+        self.spot_mappings = mappings or []
+
+    def includes_spot_num(self, spot_num):
+        for spot_map in self.spot_mappings:
+            if spot_map.includes_spot_num(spot_num):
+                return True
+
+        return False
+
+    def adjust_spot_num(self, spot_num):
+        for spot_map in self.spot_mappings:
+            ret = spot_map.adjust_spot_num(spot_num)
+            if ret is not None:
+                return ret
+
+        return None
+
+    @classmethod
+    def fromstring(cls, instring):
+        parse_res = rule_syntax.parseString(instring)
+
+        mappings = []
+        for mapping_res in parse_res[1:]:
+            mappings.append(DaystateSpotMapping.fromdict(mapping_res))
+        return DaystateRule(parse_res['state_id'], mappings)
+
+    def __str__(self):
+        return '{}:{}'.format(
+            self.state_id,
+            ','.join([str(mapping) for mapping in self.spot_mappings])
+        )
+
 
 class FixedDaystate:
     def __init__(self, date, state_id):
