@@ -314,6 +314,9 @@ class LiveOrg:
     def _fixed_daystates_list(self):
         return str(self.org_id) + ':fixed-daystates'
 
+    def _daystate_sequence(self):
+        return str(self.org_id) + ':daystate-sequence'
+
     def _token_hash(self, ty):
         if ty == ObjType.User:
             return self._user_token_hash()
@@ -586,6 +589,19 @@ class LiveOrg:
         return self._dequeue_obj(
             self._lend_queue(date), self.live_obj(ObjType.Pass, pass_id)
         )
+
+    def set_state_sequence(self, state_ids):
+        # We're using a string here because we don't really want a redis list.
+        # The states list shouldn't get too big and it's more convenient to just
+        # modify it in memory.
+        self.r.set(self._daystate_sequence(), ','.join(state_ids))
+
+    def get_state_sequence(self):
+        try:
+            return list(map(lambda x: int(x),
+                            self.r.get(self._daystate_sequence()).split(',')))
+        except ValueError:
+            return []
 
     def push_fixed_daystate(self, new_fixed_daystate):
         daystate_queue = self._fixed_daystates_list()
