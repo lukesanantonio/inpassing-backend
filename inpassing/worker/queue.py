@@ -6,6 +6,8 @@ from enum import Enum
 
 import pyparsing as pp
 
+from .daystate import current_state, num_periods
+
 DATE_FMT = '%Y-%m-%d'
 
 
@@ -627,3 +629,34 @@ class LiveOrg:
             pipe.lpush(daystate_queue, str(new_fixed_daystate))
 
         self.r.transaction(do_push, daystate_queue)
+
+    def _find_daystate_id(self, pipe, in_date):
+        # Traverse the list until we find a date that precedes the given one.
+        queue_name = self._fixed_daystates_list()
+        queue_length = pipe.llen(queue_name)
+
+        pipe.multi()
+
+        for index in range(queue_length):
+            fix = FixedDaystate.fromstring(pipe.lindex(queue_name, index))
+            if in_date > fix.date:
+                # This day state is older, use it
+                periods = num_periods(self.period_duration(), fix.date, in_date)
+                ids = self.get_state_sequence()
+                try:
+                    fixed_state_i = ids.index(fix.state_id)
+                except ValueError:
+                    # State not found, move on
+                    continue
+
+                # This fix should work, calculate the date's state
+                return current_state(
+                    self.get_state_sequence(), fixed_state_i, periods
+                )
+
+    def daystate_id(self, date):
+        def do_find(pipe):
+            return self._find_daystate_id(pipe, date)
+
+        return self.r.transaction(do_find, self._fixed_daystates_list(),
+                                  value_from_callable=True)
