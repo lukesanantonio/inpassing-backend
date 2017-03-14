@@ -85,7 +85,7 @@ def passes():
         p.org_id = org_id
         p.requested_state_id = state_id
         p.requested_spot_num = spot_num
-        p.request_time = datetime.datetime.now()
+        p.request_time = datetime.datetime.now(datetime.timezone.utc)
 
         owner_id = get_field(request, 'owner_id')
 
@@ -96,7 +96,7 @@ def passes():
             p.assigned_state_id = state_id
             p.assigned_spot_num = spot_num
             p.assigner = get_jwt_identity()
-            p.assigned_time = datetime.datetime.now()
+            p.assigned_time = datetime.datetime.now(datetime.timezone.utc)
 
         elif user_is_participant(get_jwt_identity(), org_id):
             # They can request a pass but only for themselves
@@ -168,7 +168,7 @@ def passes_query(pass_id):
 
             if modified:
                 # Update time and commit!
-                p.assigned_time = datetime.datetime.now()
+                p.assigned_time = datetime.datetime.now(datetime.timezone.utc)
                 db.session.commit()
 
                 return jsonify(util.pass_dict(p)), 200
