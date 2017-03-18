@@ -503,13 +503,13 @@ class LiveOrg:
     def refresh_user(self, date, user_id):
         """Updates a borrow token and moves it to the back of the queue."""
         self._refresh_obj_token(
-            self._borrow_queue_str(date), ObjType.User, user_id
+            self._borrow_queue(date), ObjType.User, user_id
         )
 
     def refresh_pass(self, date, pass_id):
         """Updates a lend token and moves it to the back of the queue."""
         self._refresh_obj_token(
-            self._borrow_queue_str(date), ObjType.Pass, pass_id
+            self._borrow_queue(date), ObjType.Pass, pass_id
         )
 
     def _enqueue_obj(self, queue, obj, check_existing=True):
