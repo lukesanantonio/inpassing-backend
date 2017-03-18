@@ -1,14 +1,14 @@
 # Copyright (c) 2016 Luke San Antonio Bialecki
 # All rights reserved.
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
-import pyparsing as pp
+import msgpack
 
-from .daystate import current_state, num_periods
+from . import rules, DATE_FMT, date_to_str, str_to_date
+from .rules import SECONDS_PER_DAY
 
-from . import DATE_FMT, date_to_str, str_to_date
 
 # We can't use lowercase pass so just make them capital
 class ObjType(Enum):
@@ -53,179 +53,6 @@ def _obj_exists(r, queue, obj):
 
     # Make sure to use bytes so that comparisons work.
     return True if bytes(obj) in contents else False
-
-
-# The set of patterns include anything that can be used to identify a day
-# for example: monday, tuesday, 4 for the fourth of day of every month.
-
-# Rules identify who can park on a matching day and what spot if necessary.
-# They include none, indicating parking should not be managed on a given day,
-# next to iterate over all states, or an expression that maps spots on a
-# particular daystates to other spots.
-
-# Example patterns
-
-# One state for every weekday, parking is not managed by the app on weekends:
-# [('monday', 1), ('tuesday', 2), ('wednesday', 3), ('thursday', 4),
-#  ('friday', 5), ('saturday', 'none'), ('sunday', 'none')]
-
-# Alternating A day and B days excluding weekends:
-# [('monday', 'next'), ('tuesday', 'next'), ('wednesday', 'next'),
-# ('thursday', 'next), ('friday', 'next'), ('saturday', 'none'),
-# ('sunday', 'none')]
-
-# Or more simply
-# [('saturday', 'none'), ('sunday', 'none'), ('*', 'next')]
-
-# Rules are processed by finding the first matching pattern and applying the
-# rule or list of rules. Spot is determined from the first matching rule.
-
-# Rule syntax
-# 'next' OR
-# 'none' OR
-# state id (int) OR
-# <state_id>:<spot mapping set> (string)
-
-# spot mapping sets are a comma separated list of spot mapping expressions with
-# the following syntax (start_spot_num and end_spot_num are inclusive):
-# <start_spot_num>([-<end_spot_num>[(<spot_offset>)]]|[=<adjusted_spot_num>)
-
-# Example:
-# This maps spots 1-3 to 2-4: 1=2,2=3,3=4. It can also be written: 1-3(1)
-
-# Example:
-# On weekdays that are not state 1, allow spots 1-20 (of state 1) to park in
-# spots 41-60. On state 1 days, next gives state 1 passs the right to park in
-# their regular spot. On state 2 days, the second rule is used.
-# This is the rule set:
-# [('saturday', 'none'), ('sunday', 'none'), ('*', ['next', '1:1-20(40)'])]
-
-# Parse integers as numbers not strings
-integer = pp.Word(pp.nums).setParseAction(lambda toks: int(toks[0]))
-
-spot_offset = pp.Literal('(') + integer('spot_offset') + ')'
-spot_assignment = pp.Literal('=') + integer('spot_assignment')
-
-# A mapping from a range or spots.
-spot_mapping = integer('start_spot_num') + \
-               (pp.Optional(pp.Literal('-') + integer('end_spot_num') +
-                            pp.Optional(spot_offset)) ^
-                pp.Optional(spot_offset ^ spot_assignment))
-
-# results[0] is the state id
-# results[1:] are parse results of each spot mapping
-rule_syntax = integer('state_id') + \
-              pp.Optional(pp.Suppress(':') + pp.Group(spot_mapping) +
-                          pp.ZeroOrMore(pp.Suppress(',') +
-                                        pp.Group(spot_mapping))) ^ \
-              'none' ^ 'next'
-
-
-class SpotAdjustmentType(Enum):
-    Fixed = 1
-    Offset = 2
-
-
-class DaystateSpotMapping:
-    def __init__(self, start, end=None, value=0,
-                 adjust_type=SpotAdjustmentType.Offset):
-        self.start = start
-        self.end = end or start
-        self.value = value
-        self.adjust_type = adjust_type
-
-        if self.start != self.end:
-            assert(self.adjust_type != SpotAdjustmentType.Fixed)
-
-    def includes_spot_num(self, spot_num):
-        return self.start <= spot_num <= self.end
-
-    def adjust_spot_num(self, spot_num):
-        if not self.includes_spot_num(spot_num):
-            return None
-
-        if self.adjust_type == SpotAdjustmentType.Offset:
-            return spot_num + self.value
-
-        elif self.adjust_type == SpotAdjustmentType.Fixed:
-            assert(self.start == self.end)
-            return self.value
-
-    def __str__(self):
-        if self.adjust_type == SpotAdjustmentType.Offset:
-            if self.value == 0:
-                if self.start == self.end:
-                    return str(self.start)
-                else:
-                    return '{}-{}'.format(self.start, self.end)
-            else:
-                if self.start == self.end:
-                    return '{}({})'.format(self.start, self.value)
-                else:
-                    return '{}-{}({})'.format(self.start, self.end, self.value)
-
-        elif self.adjust_type == SpotAdjustmentType.Fixed:
-            if self.start == self.end:
-                return '{}={}'.format(self.start, self.value)
-
-        raise RuntimeError('Unable to __str__ify an invalid rule')
-
-    @classmethod
-    def fromdict(cls, dict):
-        if 'spot_assignment' in dict:
-            # Only use fixed mode if we were given an adjusted spot num.
-            return DaystateSpotMapping(dict['start_spot_num'],
-                                       dict.get('end_spot_num'),
-                                       dict['spot_assignment'],
-                                       SpotAdjustmentType.Fixed)
-        else:
-            # Use spot offset if it's there, but zero will work if it's missing
-            return DaystateSpotMapping(dict['start_spot_num'],
-                                       dict.get('end_spot_num'),
-                                       dict.get('spot_offset', 0),
-                                       SpotAdjustmentType.Offset)
-
-    @classmethod
-    def fromstring(cls, instring):
-        return DaystateSpotMapping.fromdict(
-            spot_mapping.parseString(instring).asDict()
-        )
-
-
-class DaystateRule:
-    def __init__(self, state_id, mappings=None):
-        self.state_id = state_id
-        self.spot_mappings = mappings or []
-
-    def includes_spot_num(self, spot_num):
-        for spot_map in self.spot_mappings:
-            if spot_map.includes_spot_num(spot_num):
-                return True
-
-        return False
-
-    def adjust_spot_num(self, spot_num):
-        for spot_map in self.spot_mappings:
-            ret = spot_map.adjust_spot_num(spot_num)
-            if ret is not None:
-                return ret
-
-        return None
-
-    @classmethod
-    def fromstring(cls, instring):
-        parse_res = rule_syntax.parseString(instring)
-
-        mappings = []
-        for mapping_res in parse_res[1:]:
-            mappings.append(DaystateSpotMapping.fromdict(mapping_res))
-        return DaystateRule(parse_res['state_id'], mappings)
-
-    def __str__(self):
-        return '{}:{}'.format(
-            self.state_id,
-            ','.join([str(mapping) for mapping in self.spot_mappings])
-        )
 
 
 class FixedDaystate:
@@ -307,8 +134,17 @@ class LiveOrg:
     def _fixed_daystates_list(self):
         return str(self.org_id) + ':fixed-daystates'
 
+    def _current_state_cache(self):
+        return str(self.org_id) + ':current-state-cache'
+
     def _daystate_sequence(self):
         return str(self.org_id) + ':daystate-sequence'
+
+    def _reoccurring_rule_list(self):
+        return str(self.org_id) + ':global-rules'
+
+    def _single_use_rule_bucket(self):
+        return str(self.org_id) + ':single-rules'
 
     def _token_hash(self, ty):
         if ty == ObjType.User:
@@ -597,13 +433,20 @@ class LiveOrg:
             return []
 
     def push_fixed_daystate(self, new_fixed_daystate):
+        """Fixes a date to a particular day state
+
+        Behavior is undefined when the fixed state given is older than the
+        newest fix in the list.
+        """
         daystate_queue = self._fixed_daystates_list()
+        current_state_cache = self._current_state_cache()
 
         def do_push(pipe):
             # Make sure the new date is more recent then the previous date in
             # the queue. If we go backwards in time, expect issues.
 
             current_fix = pipe.lindex(daystate_queue, 0)
+
             if current_fix is not None:
                 current_fixed_daystate = FixedDaystate.fromstring(current_fix)
                 if new_fixed_daystate.date < current_fixed_daystate.date:
@@ -614,40 +457,121 @@ class LiveOrg:
                     # throw an error for now.
                     raise InvalidFixDate()
 
-            # Start buffered mode because if we are here we are ready to push
-            # the new fixed daystate.
             pipe.multi()
+
+            # Remove all cached daystate ids from the new fixed daystate onward.
+            pipe.zremrangebyscore(
+                current_state_cache, new_fixed_daystate.date.timestamp(), '+inf'
+            )
+            # Push the new daystate
             pipe.lpush(daystate_queue, str(new_fixed_daystate))
 
-        self.r.transaction(do_push, daystate_queue)
+        self.r.transaction(do_push, daystate_queue, current_state_cache)
 
-    def _find_daystate_id(self, pipe, in_date):
-        # Traverse the list until we find a date that precedes the given one.
-        queue_name = self._fixed_daystates_list()
-        queue_length = pipe.llen(queue_name)
+    def get_last_fixed_daystate(self):
+        return FixedDaystate.fromstring(
+            self.r.lindex(self._fixed_daystates_list(), 0)
+        )
 
-        pipe.multi()
+    def push_rule_set(self, rule_set: rules.RuleSet):
+        def rule_str(rs, time):
+            return msgpack.packb(rs._replace(timestamp=time))
 
-        for index in range(queue_length):
-            fix = FixedDaystate.fromstring(pipe.lindex(queue_name, index))
-            if in_date > fix.date:
-                # This day state is older, use it
-                periods = num_periods(self.period_duration(), fix.date, in_date)
-                ids = self.get_state_sequence()
-                try:
-                    fixed_state_i = ids.index(fix.state_id)
-                except ValueError:
-                    # State not found, move on
-                    continue
+        if rules.pattern_reoccurs(rule_set.pattern):
+            # Push to the top of the reoccurring rules list
+            time = int(datetime.now(timezone.utc).timestamp())
+            self.r.lpush(
+                self._reoccurring_rule_list(), rule_str(rule_set, time)
+            )
 
-                # This fix should work, calculate the date's state
-                return current_state(
-                    self.get_state_sequence(), fixed_state_i, periods
-                )
+        else:
+            # Add the one-day pattern to the current bucket, using its date as
+            # the timestamp
+            time = int(str_to_date(rule_set.pattern).timestamp())
+            # Add the timestamp to the rule set and add it to the sorted set.
+            self.r.zadd(
+                self._single_use_rule_bucket(), time, rule_str(rule_set, time)
+            )
 
-    def daystate_id(self, date):
-        def do_find(pipe):
-            return self._find_daystate_id(pipe, date)
+    def get_reoccurring_rule_sets(self):
+        return self.r.lrange(self._reoccurring_rule_list(), 0, -1)
 
-        return self.r.transaction(do_find, self._fixed_daystates_list(),
-                                  value_from_callable=True)
+    def get_single_use_rule_sets(self, start_time, end_time, convert=True):
+        res = self.r.zrangebyscore(
+            self._single_use_rule_bucket(), start_time, end_time
+        )
+
+        if convert:
+            # Convert this list of strings to a list of rule objects.
+            ret = []
+            for rule_set in res:
+                # Parse object with string rules
+                rs = rules.RuleSet(*msgpack.unpackb(rule_set, encoding='utf-8'))
+
+                # Convert rules to objects
+                new_rules = []
+                for rule in rs.rules:
+                    new_rules.append(rules.parse_rule(rule))
+
+                ret.append(rs._replace(rules=new_rules))
+            return ret
+        return res
+
+    def get_rule_set(self, date):
+        # Find the operative rule set for a particular day.
+        start_time = date.timestamp()
+        rule_sets = self.get_single_use_rule_sets(
+            start_time, start_time + SECONDS_PER_DAY
+        )
+
+        # Add reoccurring dates that could match any given date
+        rule_sets.extend(self.get_reoccurring_rule_sets())
+
+        # Return the first one that matches
+        for rs in rule_sets:
+            if rules.pattern_matches_date(rs, date):
+                return rs
+
+        # No rule set matched
+        return None
+
+    def get_daystate_id(self, target_date):
+        # Get the latest date in the cache already, if there is none use the
+        # last fixed daystate.
+
+        # Don't forget that what we get is actually id:timestamp where
+        # timestamp is the timestamp used as the score. This is used to prevent
+        # the state from being overwritten later on when the daystates go and
+        # repeat themselves.
+        latest_entry = self.r.zrevrank(self._current_state_cache(), -1)
+        latest_state_id = latest_entry.split(':')[0]
+        if latest_state_id is not None:
+            cur_timestamp = self.r.zscore(latest_state_id)
+        else:
+            # Use the most recent daystate
+            fixed_day = self.get_last_fixed_daystate()
+            cur_timestamp = fixed_day.date.timestamp()
+            latest_state_id = fixed_day.state_id
+
+        # Find list of daystates
+        daystate_seq = self.get_state_sequence()
+        # Find the index
+        curstate_i = daystate_seq.index(latest_state_id)
+
+        # Go forward day by day looking at the operative rule set, counting the
+        # amount of times it needs to be incremented.
+        while cur_timestamp < target_date.timestamp() + SECONDS_PER_DAY:
+            # Get the rule set for this day
+            current_date = datetime.fromtimestamp(cur_timestamp, timezone.utc)
+            rule_set = self.get_rule_set(current_date)
+            if rule_set.incrday:
+                curstate_i = (curstate_i + 1) % len(daystate_seq)
+
+            # Cache the daystate on this day (after processing incrday).
+            self.r.zadd(self._current_state_cache(), 'NX', cur_timestamp,
+                        '{}:{}'.format(curstate_i, cur_timestamp))
+
+            # Move on to the next day
+            cur_timestamp += SECONDS_PER_DAY
+
+        return daystate_seq[curstate_i]
