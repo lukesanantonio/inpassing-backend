@@ -8,8 +8,7 @@ import pyparsing as pp
 
 from .daystate import current_state, num_periods
 
-DATE_FMT = '%Y-%m-%d'
-
+from . import DATE_FMT, date_to_str, str_to_date
 
 # We can't use lowercase pass so just make them capital
 class ObjType(Enum):
@@ -35,14 +34,6 @@ class LiveObj:
 
     def __bytes__(self):
         return str(self).encode()
-
-
-def date_to_str(day):
-    return day.strftime(DATE_FMT)
-
-
-def str_to_date(s):
-    return datetime.strptime(s, DATE_FMT)
 
 
 def _obj_exists(r, queue, obj):

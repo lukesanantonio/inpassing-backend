@@ -1,7 +1,8 @@
 # Copyright (c) 2016 Luke San Antonio Bialecki
 # All rights reserved.
 
-from .queue import LiveOrg, str_to_date
+from . import str_to_date
+from .queue import LiveOrg
 
 
 class ParkingWorker:
