@@ -12,7 +12,7 @@ from ..models import db, User, Daystate, Pass
 from ..util import range_inclusive_dates
 from ..view_util import user_is_mod, user_is_participant, get_user_by_id, \
     get_field
-from ..worker import LiveOrg, DATE_FMT
+from ..worker import LiveOrg, str_to_date, date_to_str
 
 pass_api = Blueprint('pass', __name__)
 
@@ -216,15 +216,15 @@ class EndDateTooEarlyError(Exception):
 
 def get_date_pair(date_in, start_date_in, end_date_in):
     if date_in is not None:
-        date = datetime.datetime.strptime(date_in, DATE_FMT)
+        date = str_to_date(date_in)
         start_date = date
         end_date = date
     else:
         if start_date_in is None or end_date_in is None:
             raise MissingDateError
         else:
-            start_date = datetime.datetime.strptime(start_date_in, DATE_FMT)
-            end_date = datetime.datetime.strptime(end_date_in, DATE_FMT)
+            start_date = str_to_date(start_date_in)
+            end_date = str_to_date(end_date_in)
 
     if end_date < start_date:
         raise EndDateTooEarlyError
@@ -273,7 +273,7 @@ def borrow_pass():
         ret_obj = {}
         for date in range_inclusive_dates(start_date, end_date):
             enqueued = live_org.enqueue_user_borrow(date, user_obj.id)
-            ret_obj[datetime.date.strftime(DATE_FMT)] = {
+            ret_obj[date_to_str(date)] = {
                 'enqueued': enqueued
             }
 
@@ -289,7 +289,7 @@ def unborrow_pass():
         ret_obj = {}
         for date in range_inclusive_dates(start_date, end_date):
             dequeued = live_org.dequeue_user_borrow(date, user_obj.id)
-            ret_obj[datetime.date.strftime(DATE_FMT)] = {
+            ret_obj[date_to_str(date)] = {
                 'dequeued': dequeued
             }
 
@@ -332,7 +332,7 @@ def lend_pass(pass_id):
         ret_obj = {}
         for date in range_inclusive_dates(start_date, end_date):
             enqueued = live_org.enqueue_pass_lend(date, pass_obj.id)
-            ret_obj[date.strftime(DATE_FMT)] = {
+            ret_obj[date_to_str(date)] = {
                 'enqueued': enqueued
             }
 
@@ -350,7 +350,7 @@ def unlend_pass(pass_id):
         ret_obj = {}
         for date in range_inclusive_dates(start_date, end_date):
             dequeued = live_org.dequeue_pass_lend(date, pass_obj.id)
-            ret_obj[date.strftime(DATE_FMT)] = {
+            ret_obj[date_to_str(date)] = {
                 'dequeued': dequeued
             }
         return jsonify(ret_obj), 200
