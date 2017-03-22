@@ -544,9 +544,9 @@ class LiveOrg:
         # the state from being overwritten later on when the daystates go and
         # repeat themselves.
         latest_entry = self.r.zrevrank(self._current_state_cache(), -1)
-        latest_state_id = latest_entry.split(':')[0]
-        if latest_state_id is not None:
-            cur_timestamp = self.r.zscore(latest_state_id)
+        if latest_entry is not None:
+            latest_state_id = int(latest_entry.split(':')[0])
+            cur_timestamp = self.r.zscore(latest_entry)
         else:
             # Use the most recent daystate
             fixed_day = self.get_last_fixed_daystate()
