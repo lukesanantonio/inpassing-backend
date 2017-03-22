@@ -327,7 +327,7 @@ def org_daystates_query(org_id, daystate_id):
         db.session.commit()
 
     else:
-        # If the user is trying to get info about this game state they must be a
+        # If the user is trying to get info about this day state they must be a
         # participant.
 
         if not (user_is_participant(user_id, org_id) or
