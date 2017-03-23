@@ -9,7 +9,7 @@ from flask_redis import FlaskRedis
 
 from .. import util
 from ..models import db, User, Daystate, Pass
-from ..util import range_inclusive_dates
+from ..util import range_inclusive_dates, get_redis
 from ..view_util import user_is_mod, user_is_participant, get_user_by_id, \
     get_field
 from ..worker import LiveOrg, str_to_date, date_to_str
@@ -17,8 +17,6 @@ from ..worker import LiveOrg, str_to_date, date_to_str
 pass_api = Blueprint('pass', __name__)
 
 redis_store = FlaskRedis()
-live_orgs = {}
-
 
 @pass_api.route('/', methods=['GET', 'POST'])
 @jwt_required
@@ -232,13 +230,6 @@ def get_date_pair(date_in, start_date_in, end_date_in):
     return start_date, end_date
 
 
-def get_live_org(org_id):
-    if org_id not in live_orgs:
-        live_orgs[org_id] = LiveOrg(redis_store, org_id)
-
-    return live_orgs[org_id]
-
-
 def do_borrow(user_id, js, action):
     user_obj = User.query.filter_by(id=user_id).first()
     if user_obj is None:
@@ -262,8 +253,7 @@ def do_borrow(user_id, js, action):
             'msg': str(e)
         }), 422), True
 
-    live_org = get_live_org(org_id)
-    return action(start_date, end_date, user_obj, live_org)
+    return action(start_date, end_date, user_obj, LiveOrg(get_redis(), org_id))
 
 
 @pass_api.route('/borrow', methods=['POST'])
@@ -320,9 +310,9 @@ def do_lend(pass_id, user_id, js, action):
             'msg': str(e)
         }), 422
 
-    live_org = get_live_org(pass_obj.org_id)
-
-    return action(start_date, end_date, pass_obj, live_org)
+    return action(
+        start_date, end_date, pass_obj, LiveOrg(get_redis(), pass_obj.org_id)
+    )
 
 
 @pass_api.route('/<pass_id>/lend', methods=['POST'])

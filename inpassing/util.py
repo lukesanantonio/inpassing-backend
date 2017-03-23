@@ -5,7 +5,7 @@ from urllib.parse import urlparse, urljoin
 from datetime import timedelta
 from functools import wraps
 
-from flask import request, redirect, url_for
+from flask import request, redirect, url_for, current_app
 from flask_jwt_extended import utils
 from flask_jwt_extended.exceptions import NoAuthorizationError
 from flask_jwt_extended.utils import ctx_stack
@@ -109,3 +109,10 @@ def pass_dict(p):
         'assigned_state_id': p.assigned_state_id,
         'assigned_spot_num': p.assigned_spot_num,
     }
+
+
+def get_redis():
+    if 'redis' in current_app.extensions:
+        return current_app['redis']
+    else:
+        return None
