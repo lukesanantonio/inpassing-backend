@@ -1,8 +1,8 @@
 # Copyright (c) 2016 Luke San Antonio Bialecki
 # All rights reserved.
 
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
+from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
@@ -34,11 +34,6 @@ class Org(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
-
-    # Format string to present to users informing them of the day state.
-    # For example: "Today is an {} day" where state strings are A or B. The {}
-    # may not be the final implementation of formatting."
-    day_state_greeting_fmt = db.Column(db.String(255))
 
     # Stores the active timezone of the organization.
     timezone = db.Column(db.String(64))
