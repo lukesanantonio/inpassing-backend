@@ -48,6 +48,11 @@ def orgs_query(org_id):
         'name': org.name
     }
 
+    user_id = get_jwt_identity()
+    if user_is_participant(user_id, org_id) or user_is_mod(user_id, org_id):
+        # Provide the timezone in the object
+        ret.update({'timezone': org.timezone})
+
     return jsonify(ret), 200
 
 
