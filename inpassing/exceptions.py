@@ -46,6 +46,17 @@ class MissingFieldError(InPassingException):
         return 'missing field {}'.format(self.field)
 
 
+class InvalidTimezoneError(InPassingException):
+    code = 422
+    err = "invalid_timezone"
+
+    def __init__(self, tz):
+        self.tz = tz
+
+    def get_msg(self):
+        return 'invalid timezone {}'.format(self.tz)
+
+
 class UserExistsError(InPassingException):
     code = 422
     err = 'user_exists'

@@ -4,6 +4,8 @@
 from flask import Blueprint, jsonify, request, current_app, url_for
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
+from pytz import all_timezones
+
 from .. import util, exceptions as ex
 from ..models import db, Org, User, Daystate
 from ..util import jwt_optional
@@ -17,8 +19,12 @@ org_api = Blueprint('org', __name__)
 @jwt_required
 def create_org():
     name = get_field(request, 'name')
+    timezone = get_field(request, 'timezone')
 
-    org = Org(name=name)
+    if timezone not in all_timezones:
+        raise ex.InvalidTimezoneError(timezone)
+
+    org = Org(name=name, timezone=timezone)
     db.session.add(org)
 
     # Make this user a moderator

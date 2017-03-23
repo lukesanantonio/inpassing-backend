@@ -26,7 +26,8 @@ Create a new Org. The authenticated user will become a moderator.
     + Body
 
         {
-            "name": "Locust Valley High School"
+            "name": "Locust Valley High School",
+            "timezone": "America/New_York"
         }
 
 + Response 201
@@ -78,6 +79,7 @@ Create a new Org. The authenticated user will become a moderator.
 
     + Attributes (Org)
         + greeting_fmt: `Today is a {} day` (string) - The greeting format
+        + timezone: `America/New_York` (string) - The timezone string
         
     
 ## Org Participant collection [/orgs/{id}/participants]

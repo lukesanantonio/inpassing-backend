@@ -40,6 +40,9 @@ class Org(db.Model):
     # may not be the final implementation of formatting."
     day_state_greeting_fmt = db.Column(db.String(255))
 
+    # Stores the active timezone of the organization.
+    timezone = db.Column(db.String(64))
+
     ## Relationships
     # An org has a finite set of day states.
     parking_states = db.relationship('Daystate', backref='org')
