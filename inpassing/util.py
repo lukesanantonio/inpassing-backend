@@ -2,9 +2,10 @@
 # All rights reserved.
 
 from urllib.parse import urlparse, urljoin
-from datetime import timedelta
+from datetime import datetime, timedelta
 from functools import wraps
 
+import pytz
 from flask import request, redirect, url_for, current_app
 from flask_jwt_extended import utils
 from flask_jwt_extended.exceptions import NoAuthorizationError, WrongTokenError
@@ -116,3 +117,18 @@ def get_redis():
         return current_app['redis']
     else:
         return None
+
+
+SECONDS_PER_DAY = 60 * 60 * 24
+
+
+def get_today_datetime(tz):
+    # Use the timezone local to the org.
+    day = datetime.now(pytz.utc).astimezone(tz)
+
+    # Truncate to the nearest day and remain in the org's timezone.
+    return tz.localize(datetime(day.year, day.month, day.day))
+
+
+def datetime_from_timestamp(ts, tz):
+    return datetime.fromtimestamp(ts, pytz.utc).astimezone(tz)

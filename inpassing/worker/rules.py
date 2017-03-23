@@ -10,7 +10,7 @@ import pyparsing as pp
 
 from . import str_to_date
 
-SECONDS_PER_DAY = 60 * 60 * 24
+from ..util import SECONDS_PER_DAY
 
 # A rule set is a three-element tuple. The first element is a string pattern
 # that can match a particular day of the week or month. The second element
