@@ -7,7 +7,7 @@ from functools import wraps
 
 from flask import request, redirect, url_for, current_app
 from flask_jwt_extended import utils
-from flask_jwt_extended.exceptions import NoAuthorizationError
+from flask_jwt_extended.exceptions import NoAuthorizationError, WrongTokenError
 from flask_jwt_extended.utils import ctx_stack
 from flask_wtf import FlaskForm
 from wtforms import HiddenField
