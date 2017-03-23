@@ -17,6 +17,7 @@ packaging==16.8
 pycparser==2.17
 PyJWT==1.4.2
 pyparsing==2.1.10
+pytz==2016.10
 redis==2.10.5
 simplekv==0.10.0
 six==1.10.0
