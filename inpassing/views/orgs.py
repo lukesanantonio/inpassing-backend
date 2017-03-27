@@ -166,7 +166,7 @@ def org_participants_query(org_id, user_id):
         else:
             return no_part_ret
     else:
-        raise ex.Forbbiden(
+        raise ex.Forbidden(
             'user {} must moderate or participate in org {}'.format(
                 client_user_id, org_id
             )
