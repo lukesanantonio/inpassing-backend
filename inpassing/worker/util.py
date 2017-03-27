@@ -10,5 +10,9 @@ def date_to_str(day):
     return day.strftime(DATE_FMT)
 
 
-def str_to_date(s):
-    return datetime.strptime(s, DATE_FMT).replace(tzinfo=timezone.utc)
+def str_to_date(s, tz=None):
+    ret = datetime.strptime(s, DATE_FMT)
+    if tz:
+        return tz.localize(ret)
+    else:
+        return ret
