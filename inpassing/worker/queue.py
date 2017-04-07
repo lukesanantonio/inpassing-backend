@@ -7,7 +7,7 @@ from enum import Enum
 import msgpack
 
 from . import rules, DATE_FMT, date_to_str, str_to_date
-from .rules import SECONDS_PER_DAY
+from .timeutil import SECONDS_PER_DAY, LocalizedDateUtil
 
 
 # We can't use lowercase pass so just make them capital
