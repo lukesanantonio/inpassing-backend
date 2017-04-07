@@ -1,7 +1,9 @@
 # Copyright (c) 2016 Luke San Antonio Bialecki
 # All rights reserved.
 
-from datetime import datetime, timezone
+import pytz
+from pytz import timezone
+from datetime import datetime
 from enum import Enum
 
 import msgpack
@@ -61,12 +63,12 @@ class FixedDaystate:
         self.state_id = state_id
 
     @classmethod
-    def fromstring(cls, str):
+    def fromstring(cls, str, tz=None):
         date, state_id = tuple(str.split(':'))
-        return FixedDaystate(datetime.strptime(date, DATE_FMT), int(state_id))
+        return FixedDaystate(str_to_date(str, tz), int(state_id))
 
     def __str__(self):
-        return self.date.strftime(DATE_FMT) + ':' + str(self.state_id)
+        return date_to_str(self.date) + ':' + str(self.state_id)
 
     def __eq__(self, other):
         return (self.date.year == other.date.year and
@@ -91,12 +93,14 @@ class LiveOrg:
 
     """
 
-    def __init__(self, redis, org_id):
+    def __init__(self, redis, org):
         self.r = redis
 
         # Can we make this immutable? That way we don't have to call the
         # active_queue_set and friend functions over and over.
-        self.org_id = org_id
+        self.org_id = org.id
+        self.timezone = timezone(org.timezone)
+        self.date_util = LocalizedDateUtil(self.timezone)
 
     ###
     # Names of redis keys
@@ -448,7 +452,9 @@ class LiveOrg:
             current_fix = pipe.lindex(daystate_queue, 0)
 
             if current_fix is not None:
-                current_fixed_daystate = FixedDaystate.fromstring(current_fix)
+                current_fixed_daystate = FixedDaystate.fromstring(
+                    current_fix, self.timezone
+                )
                 if new_fixed_daystate.date < current_fixed_daystate.date:
                     # The new fix comes before the one already there.
 
@@ -470,7 +476,7 @@ class LiveOrg:
 
     def get_last_fixed_daystate(self):
         return FixedDaystate.fromstring(
-            self.r.lindex(self._fixed_daystates_list(), 0)
+            self.r.lindex(self._fixed_daystates_list(), 0), self.timezone
         )
 
     def push_rule_set(self, rule_set: rules.RuleSet):
@@ -479,7 +485,7 @@ class LiveOrg:
 
         if rules.pattern_reoccurs(rule_set.pattern):
             # Push to the top of the reoccurring rules list
-            time = int(datetime.now(timezone.utc).timestamp())
+            time = int(datetime.now(pytz.utc).timestamp())
             self.r.lpush(
                 self._reoccurring_rule_list(), rule_str(rule_set, time)
             )
@@ -487,7 +493,7 @@ class LiveOrg:
         else:
             # Add the one-day pattern to the current bucket, using its date as
             # the timestamp
-            time = int(str_to_date(rule_set.pattern).timestamp())
+            time = int(str_to_date(rule_set.pattern, self.timezone).timestamp())
             # Add the timestamp to the rule set and add it to the sorted set.
             self.r.zadd(
                 self._single_use_rule_bucket(), time, rule_str(rule_set, time)
@@ -562,7 +568,9 @@ class LiveOrg:
         # amount of times it needs to be incremented.
         while cur_timestamp < target_date.timestamp() + SECONDS_PER_DAY:
             # Get the rule set for this day
-            current_date = datetime.fromtimestamp(cur_timestamp, timezone.utc)
+            current_date = self.timezone.localize(
+                datetime.fromtimestamp(cur_timestamp)
+            )
             rule_set = self.get_rule_set(current_date)
             if rule_set.incrday:
                 curstate_i = (curstate_i + 1) % len(daystate_seq)

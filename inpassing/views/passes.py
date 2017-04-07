@@ -11,7 +11,7 @@ from .. import util
 from ..models import db, User, Daystate, Pass
 from ..util import range_inclusive_dates, get_redis
 from ..view_util import user_is_mod, user_is_participant, get_user_by_id, \
-    get_field
+    get_field, get_org_by_id
 from ..worker import LiveOrg, str_to_date, date_to_str
 
 pass_api = Blueprint('pass', __name__)
@@ -253,7 +253,10 @@ def do_borrow(user_id, js, action):
             'msg': str(e)
         }), 422), True
 
-    return action(start_date, end_date, user_obj, LiveOrg(get_redis(), org_id))
+    return action(
+        start_date, end_date, user_obj,
+        LiveOrg(get_redis(), get_org_by_id(org_id))
+    )
 
 
 @pass_api.route('/borrow', methods=['POST'])
@@ -311,7 +314,8 @@ def do_lend(pass_id, user_id, js, action):
         }), 422
 
     return action(
-        start_date, end_date, pass_obj, LiveOrg(get_redis(), pass_obj.org_id)
+        start_date, end_date, pass_obj,
+        LiveOrg(get_redis(), get_org_by_id(pass_obj.org_id))
     )
 
 
