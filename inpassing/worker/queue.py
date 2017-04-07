@@ -390,6 +390,8 @@ class LiveOrg:
         # TODO: Remove objects with an old token (do this by searching the
         # list and looking at every obj. We could issue a warning if the token
         # is different.
+        # TODO: Remove objects by ID, not entire object because that would be
+        # dependent on the token, etc.
         removed = self.r.lrem(queue, 1, bytes(obj))
         return True if removed > 0 else False
 
