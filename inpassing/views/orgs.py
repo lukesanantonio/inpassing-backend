@@ -8,9 +8,10 @@ from pytz import all_timezones
 
 from .. import util, exceptions as ex
 from ..models import db, Org, User, Daystate
-from ..util import jwt_optional
+from ..util import jwt_optional, get_redis
 from ..view_util import user_is_mod, user_is_participant, get_field, \
     get_org_by_id, get_user_by_id
+from ..worker import LiveOrg
 
 org_api = Blueprint('org', __name__)
 
@@ -365,6 +366,14 @@ def org_daystates_current(org_id):
             )
         )
 
-    # TODO: Tie this into the live org / worker implementation somehow!
-    daystate = Daystate.query.filter_by(org_id=org_id).first()
+    live_org = LiveOrg(get_redis(), get_org_by_id(org_id))
+
+    # Get the datetime of the start of today ie 00:00:00.
+    today = live_org.date_util.today()
+
+    # Use the aware datetime to find the daystate today.
+    daystate = Daystate.query.filter_by(
+        org_id=org_id,
+        id=live_org.get_daystate_id(today)
+    ).first()
     return jsonify(util.daystate_dict(daystate)), 200
