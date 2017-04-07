@@ -287,6 +287,13 @@ class LiveOrg:
 
         return LiveObj(ty, id, int(token))
 
+
+    def live_user(self, id, r=None):
+        return self.live_obj(ObjType.User, id, r)
+
+    def live_pass(self, id, r=None):
+        return self.live_obj(ObjType.Pass, id, r)
+
     def _refresh_obj_token(self, queue_name, obj_type, obj_id):
         """Updates an object token and moves it to the back of the queue.
 
@@ -400,14 +407,14 @@ class LiveOrg:
         self._activate_day_queue(date)
         # Enqueue the user onto the borrow queue
         return self._enqueue_obj(
-            self._borrow_queue(date), self.live_obj(ObjType.User, user_id)
+            self._borrow_queue(date), self.live_user(user_id)
         )
 
     def dequeue_user_borrow(self, date, user_id):
         # TODO: Deactivate the queue if necessary (if it's empty).
         # Dequeue the pass from the borrow queue
         return self._dequeue_obj(
-            self._borrow_queue(date), self.live_obj(ObjType.User, user_id)
+            self._borrow_queue(date), self.live_user(user_id)
         )
 
     def enqueue_pass_lend(self, date, pass_id):
@@ -415,14 +422,14 @@ class LiveOrg:
         self._activate_day_queue(date)
         # Enqueue the pass onto the lend queue
         return self._enqueue_obj(
-            self._lend_queue(date), self.live_obj(ObjType.Pass, pass_id)
+            self._lend_queue(date), self.live_pass(pass_id)
         )
 
     def dequeue_pass_lend(self, date, pass_id):
         # TODO: Deactivate the queue if necessary (if it's empty).
         # Dequeue the pass from the lend queue
         return self._dequeue_obj(
-            self._lend_queue(date), self.live_obj(ObjType.Pass, pass_id)
+            self._lend_queue(date), self.live_pass(pass_id)
         )
 
     def set_state_sequence(self, state_ids):
