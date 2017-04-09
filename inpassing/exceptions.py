@@ -57,6 +57,19 @@ class InvalidTimezoneError(InPassingException):
         return 'invalid timezone {}'.format(self.tz)
 
 
+class InvalidDaystate(InPassingException):
+    code = 422
+    err = "invalid_daystate"
+
+    def __init__(self, ds, org):
+        self.daystate_id = ds
+        self.org_id = org
+
+    def get_msg(self):
+        return 'invalid daystate {} does not exist in org {}'.format(
+            self.daystate_id, self.org_id)
+
+
 class UserExistsError(InPassingException):
     code = 422
     err = 'user_exists'

@@ -10,7 +10,7 @@ from .. import util, exceptions as ex
 from ..models import db, Org, User, Daystate
 from ..util import jwt_optional, get_redis
 from ..view_util import user_is_mod, user_is_participant, get_field, \
-    get_org_by_id, get_user_by_id
+    get_org_by_id, get_user_by_id, daystate_exists
 from ..worker import LiveOrg
 
 org_api = Blueprint('org', __name__)
@@ -302,6 +302,24 @@ def org_daystates(org_id):
              } for state in daystates]
         ), 200
 
+@org_api.route('/<org_id>/daystate_sequence', methods=['GET', 'POST'])
+def org_daystate_sequence(org_id):
+    # Construct a live org
+    live_org = LiveOrg(get_redis(), get_org_by_id(org_id))
+    if request.method == 'POST':
+        # This should be an array of ints / ids
+        daystate_seq = get_field(request, 'daystate_sequence')
+
+        for daystate_id in daystate_seq:
+            if not daystate_exists(daystate_id, org_id):
+                raise ex.InvalidDaystate(daystate_id, org_id)
+
+        live_org.set_state_sequence(daystate_seq)
+    else:
+        return jsonify({
+            'org': org_id,
+            'daystate_sequence': live_org.get_state_sequence()
+        }), 200
 
 # Technically, daystates are separate from orgs, but we want the client to know
 # what org a given day state ID applies for. That is to say that all daystates
