@@ -3,7 +3,7 @@
 
 from . import exceptions as ex
 from . import models
-from .models import db, User, Org
+from .models import db, User, Org, Daystate
 
 
 def user_is_participant(user_id, org_id):
@@ -39,3 +39,9 @@ def get_user_by_id(user_id):
     if user is None:
         raise ex.UserNotFound(user_id)
     return user
+
+
+def daystate_exists(daystate_id, org_id):
+    query = Daystate.query.filter_by(id=daystate_id, org_id=org_id)
+    (ret,) = db.session.query(query.exists()).first()
+    return ret
