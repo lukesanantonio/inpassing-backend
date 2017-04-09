@@ -65,7 +65,7 @@ class FixedDaystate:
     @classmethod
     def fromstring(cls, str, tz=None):
         date, state_id = tuple(str.split(':'))
-        return FixedDaystate(str_to_date(str, tz), int(state_id))
+        return FixedDaystate(str_to_date(date, tz), int(state_id))
 
     def __str__(self):
         return date_to_str(self.date) + ':' + str(self.state_id)
