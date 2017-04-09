@@ -1,16 +1,12 @@
 # Copyright (c) 2017 Luke San Antonio Bialecki
 # All rights reserved.
 
-from datetime import datetime, timezone
-from enum import Enum
 from collections import namedtuple
+from enum import Enum
 
-import msgpack
 import pyparsing as pp
 
 from . import str_to_date
-
-from ..util import SECONDS_PER_DAY
 
 # A rule set is a three-element tuple. The first element is a string pattern
 # that can match a particular day of the week or month. The second element
