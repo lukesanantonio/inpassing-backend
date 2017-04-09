@@ -312,6 +312,41 @@ Returns the current day state, this will change on a day by day basis.
 
     + Body
 
+### Get the sequence of daystates [GET /orgs/{org_id}/daystate_sequence]
+
+Every Org has a built-in list of states that and a curstate pointer which will
+continuously loop over the list depending on the rules associated with that
+Org. It is used to express any sort of looping set of daystates.
+
+Returns the daystate sequence as a JSON array (wrapped in an object).
+
++ Request
+
+    + Header
+
+        Authorization: Bearer JWT
+
++ Response 200 (application/json)
+
+    + Attributes
+
+        daystate_sequence: array[number]
+
+
+### Modify the sequence of daystates [POST /orgs/{org_id}/daystate_sequence]
+
++ Request
+
+    + Header
+
+        Authorization: Bearer JWT
+
+    + Attributes
+        + daystate_sequence (array[number])
+
++ Response 200 (application/json)
+
+
 ## Group Users
 
 ## User [/users]
