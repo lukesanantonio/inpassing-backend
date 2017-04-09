@@ -395,3 +395,17 @@ def org_daystates_current(org_id):
         id=live_org.get_daystate_id(today)
     ).first()
     return jsonify(util.daystate_dict(daystate)), 200
+
+@org_api.route('/<org_id>/rules', methods=['GET', 'PUT', 'POST'])
+def org_rules(org_id):
+    # When the client uses GET we want to query rules only, when they use
+    # POST we only want to add rules, throwing an error if a rule already
+    # exists in its place. If the client uses PUT we will allow them to
+    # modify an existing rule.
+    live_org = LiveOrg(get_redis(), get_org_by_id(org_id))
+    if request.method == 'GET':
+        pass
+    elif request.method == 'PUT':
+        pass
+    else:
+        pass

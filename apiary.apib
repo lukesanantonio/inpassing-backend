@@ -347,6 +347,48 @@ Returns the daystate sequence as a JSON array (wrapped in an object).
 + Response 200 (application/json)
 
 
+### Query Org rules [GET /orgs/{org_id}/rules]
+
+Query a rule set or many rule sets.
+
++ Request
+
+    + Header
+
+        Authorization: Bearer JWT
+
+    + Body
+
+        + Attributes
+            + reoccurring (boolean, optional)
+            + pattern (string, optional)
+
+### Adjust Org rule [PUT /orgs/{org_id}/rule]
+
++ Request
+
+    + Header
+
+        Authorization: Bearer JWT
+
+    + Body
+
+        + Attributes (Rule Set)
+
+### Add Org rule [POST /orgs/{org_id}/rules]
+
+Throws an error if the date already has a rule associated with it.
+
++ Request
+
+    + Header
+
+        Authorization: Bearer JWT
+
+    + Body
+
+        + Attributes (Rule Set)
+
 ## Group Users
 
 ## User [/users]
@@ -664,3 +706,8 @@ Removes a request to lend a pass on behalf of the user in the given date range.
 + identifier: M (string) - A recognizable short name / character for the state
 + greeting: `Today is a Monday` (string) - The greeting used to inform clients
   of the state of the current day.
+
+## Rule Set (object)
++ pattern (string)
++ incrday (boolean)
++ rules (array[string])
