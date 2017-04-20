@@ -27,7 +27,7 @@ def create_schema():
 @manager.command
 def init_test_data():
 
-    org = Org(name='Locust Valley High School')
+    org = Org(name='Locust Valley High School', timezone="America/New_York")
     db.session.add(org)
 
     db.session.commit()
