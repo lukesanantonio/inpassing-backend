@@ -28,8 +28,7 @@ def jwt_optional(fn):
                 utils.check_if_token_revoked(jwt_data)
 
             # Add the data to the context
-            ctx_stack.top.jwt_identity = jwt_data['identity']
-            ctx_stack.top.jwt_user_claims = jwt_data['user_claims']
+            ctx_stack.top.jwt = jwt_data
         except NoAuthorizationError:
             # Ignore a missing header
             pass
