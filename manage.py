@@ -12,6 +12,11 @@ import inpassing
 from inpassing.models import db, Org, User, Pass, Daystate
 
 # Create a test app
+from inpassing.views import redis_store
+from inpassing.worker import LiveOrg
+from inpassing.worker.queue import FixedDaystate
+from inpassing.worker.rules import RuleSet
+
 app = inpassing.create_app(instance_relative_config=True)
 
 manager = Manager(app)
@@ -61,6 +66,19 @@ def init_test_data():
     db.session.add(other_pass)
 
     db.session.commit()
+
+    live_org = LiveOrg(redis_store, org)
+
+    live_org.set_state_sequence([a_day.id, b_day.id])
+
+    live_org.push_fixed_daystate(
+        FixedDaystate(datetime.datetime(2017, 4, 18), a_day.id)
+    )
+
+    ts_now = datetime.datetime.now(datetime.timezone.utc).timestamp()
+    live_org.push_rule_set(RuleSet('*', True, 'cur', ts_now))
+    live_org.push_rule_set(RuleSet('sunday', False, 'none', ts_now))
+    live_org.push_rule_set(RuleSet('saturday', False, 'none', ts_now))
 
 
 def parse_field(prompt_fmt, cur_value):
