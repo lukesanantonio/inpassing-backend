@@ -3,6 +3,7 @@
 
 from collections import namedtuple
 from enum import Enum
+import msgpack
 
 import pyparsing as pp
 
@@ -335,3 +336,20 @@ def pattern_reoccurs(day):
     if day == '*':
         return True
     return True if day in days else False
+
+
+def convert_rules(self, res):
+    """Converts a list of rule msgpack strings to a list of objects."""
+    ret = []
+    for rule_set in res:
+        # Parse object with string rules
+        rs = RuleSet(*msgpack.unpackb(rule_set, encoding='utf-8'))
+
+        # Convert rules to objects
+        new_rules = []
+        for rule in rs.rules:
+            new_rules.append(parse_rule(rule))
+
+        # Add the rule set with the fixed rules to the list we will return.
+        ret.append(rs._replace(rules=new_rules))
+    return ret

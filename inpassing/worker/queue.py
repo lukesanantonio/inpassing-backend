@@ -512,29 +512,16 @@ class LiveOrg:
                 self._single_use_rule_bucket(), time, rule_str(rule_set, time)
             )
 
-    def get_reoccurring_rule_sets(self):
-        return self.r.lrange(self._reoccurring_rule_list(), 0, -1)
+    def get_reoccurring_rule_sets(self, convert=True):
+        res = self.r.lrange(self._reoccurring_rule_list(), 0, -1)
+        return rules.convert_rules(res) if convert else res
 
     def get_single_use_rule_sets(self, start_time, end_time, convert=True):
         res = self.r.zrangebyscore(
             self._single_use_rule_bucket(), start_time, end_time
         )
 
-        if convert:
-            # Convert this list of strings to a list of rule objects.
-            ret = []
-            for rule_set in res:
-                # Parse object with string rules
-                rs = rules.RuleSet(*msgpack.unpackb(rule_set, encoding='utf-8'))
-
-                # Convert rules to objects
-                new_rules = []
-                for rule in rs.rules:
-                    new_rules.append(rules.parse_rule(rule))
-
-                ret.append(rs._replace(rules=new_rules))
-            return ret
-        return res
+        return rules.convert_rules(res) if convert else res
 
     def get_rule_set(self, date):
         # Find the operative rule set for a particular day.
