@@ -516,7 +516,14 @@ class LiveOrg:
         res = self.r.lrange(self._reoccurring_rule_list(), 0, -1)
         return rules.convert_rules(res) if convert else res
 
-    def get_single_use_rule_sets(self, start_time, end_time, convert=True):
+    def get_single_use_rule_sets(self, start_time=None, end_time=None,
+                                 convert=True):
+        # Don't force the client to pick a limit.
+        if start_time is None:
+            start_time = '-inf'
+        if end_time is None:
+            end_time = '+inf'
+
         res = self.r.zrangebyscore(
             self._single_use_rule_bucket(), start_time, end_time
         )
