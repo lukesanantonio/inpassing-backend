@@ -6,6 +6,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from pytz import all_timezones
 
+from inpassing.worker.rules import dict_from_ruleset
 from .. import util, exceptions as ex
 from ..models import db, Org, User, Daystate
 from ..util import jwt_optional, get_redis
@@ -435,3 +436,27 @@ def org_rules(org_id):
         pass
     else:
         pass
+
+
+@org_api.route('/<org_id>/rules/current')
+@jwt_required
+def org_rules_current(org_id):
+    user_id = get_jwt_identity()
+    if not (user_is_participant(user_id, org_id) or
+                user_is_mod(user_id, org_id)):
+        raise ex.Forbidden(
+            'user {} must mod or participate in org {}'.format(
+                user_id, org_id
+            )
+        )
+
+    live_org = LiveOrg(get_redis(), get_org_by_id(org_id))
+
+    # Get the datetime of the start of today ie 00:00:00.
+    today = live_org.date_util.today()
+
+    # Return the operative rule today
+    return jsonify({
+        'active_rule_set': dict_from_ruleset(live_org.get_rule_set(today))
+    }), 200
+
