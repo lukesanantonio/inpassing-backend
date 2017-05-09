@@ -494,7 +494,11 @@ class LiveOrg:
 
     def push_rule_set(self, rule_set: rules.RuleSet):
         def rule_str(rs, time):
-            return msgpack.packb(rs._replace(timestamp=time))
+            new_rules = rs.rules
+            if not isinstance(rs.rules, list):
+                # Make sure we have a list of rules instead of a single value.
+                new_rules = [rs.rules]
+            return msgpack.packb(rs._replace(rules=new_rules, timestamp=time))
 
         if rules.pattern_reoccurs(rule_set.pattern):
             # Push to the top of the reoccurring rules list
