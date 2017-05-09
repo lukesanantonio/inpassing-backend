@@ -20,9 +20,11 @@ def user_is_mod(user_id, org_id):
     return ret
 
 
-def get_field(request, field):
-    val = request.get_json().get(field, None)
-    if val is None:
+NO_DEFAULT_FIELD_VALUE = {}
+
+def get_field(request, field, default=NO_DEFAULT_FIELD_VALUE):
+    val = request.get_json().get(field, default)
+    if val is NO_DEFAULT_FIELD_VALUE:
         raise ex.MissingFieldError(field)
     return val
 
