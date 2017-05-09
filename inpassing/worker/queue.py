@@ -441,8 +441,10 @@ class LiveOrg:
 
     def get_state_sequence(self):
         try:
-            return list(map(lambda x: int(x),
-                            self.r.get(self._daystate_sequence()).split(',')))
+            seq = self.r.get(self._daystate_sequence())
+            if seq is None:
+                return []
+            return list(map(lambda x: int(x), seq.decode('utf-8').split(',')))
         except ValueError:
             return []
 
@@ -486,7 +488,8 @@ class LiveOrg:
 
     def get_last_fixed_daystate(self):
         return FixedDaystate.fromstring(
-            self.r.lindex(self._fixed_daystates_list(), 0), self.timezone
+            self.r.lindex(self._fixed_daystates_list(), 0).decode('utf-8'),
+            self.timezone
         )
 
     def push_rule_set(self, rule_set: rules.RuleSet):
