@@ -275,6 +275,38 @@ RuleSet = namedtuple('RuleSet', ['pattern', 'incrday', 'rules', 'timestamp'])
 days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday',
         'sunday']
 
+def dict_from_ruleset(rs):
+    rules = []
+    if isinstance(rs.rules, CompositeMapping):
+        # A composite mapping
+        rules = rs.rules.maps
+    elif not isinstance(rs.rules, list):
+        # One rule, hopefully a string or something the client will
+        # understand and that can be directly serialized to JSON.
+        rules = [rs.rules]
+    else:
+        # A regular list of strings, or mappings that we can easier convert
+        # to a string.
+        rules = rs.rules
+
+    return {
+        'pattern': rs.pattern,
+        'incrday': rs.incrday,
+        'rules': [str(rule) for rule in rules],
+        'timestamp': rs.timestamp,
+    }
+
+
+def ruleset_from_dict(d, ts=None):
+    d_ts = None
+    if 'timestamp' in d:
+        d_ts = d.timestamp
+
+    return RuleSet(
+        d.pattern, d.incrday, [parse_rule(rule) for rule in d.rules],
+        ts or d_ts,
+    )
+
 
 def pattern_matches_date(pattern, date):
     if pattern == '*':
