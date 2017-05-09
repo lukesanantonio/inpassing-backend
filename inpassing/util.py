@@ -113,6 +113,6 @@ def pass_dict(p):
 
 def get_redis():
     if 'redis' in current_app.extensions:
-        return current_app['redis']
+        return current_app.extensions['redis']
     else:
         return None
