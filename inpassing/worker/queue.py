@@ -544,7 +544,7 @@ class LiveOrg:
 
         # Return the first one that matches
         for rs in rule_sets:
-            if rules.pattern_matches_date(rs, date):
+            if rules.pattern_matches_date(rs.pattern, date):
                 return rs
 
         # No rule set matched
