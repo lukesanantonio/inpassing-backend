@@ -570,8 +570,11 @@ class LiveOrg:
 
         # Find list of daystates
         daystate_seq = self.get_state_sequence()
-        # Find the index
+        # Find the starting index
         curstate_i = daystate_seq.index(latest_state_id)
+
+        # Now move forward by a day, we already know today's daystate.
+        cur_timestamp += SECONDS_PER_DAY
 
         # Go forward day by day looking at the operative rule set, counting the
         # amount of times it needs to be incremented.
@@ -585,7 +588,9 @@ class LiveOrg:
                 curstate_i = (curstate_i + 1) % len(daystate_seq)
 
             # Cache the daystate on this day (after processing incrday).
-            self.r.zadd(self._current_state_cache(), 'NX', cur_timestamp,
+            # Find some way to add NX in there which prevents new items from
+            # being created, but redis-py doesn't support it.
+            self.r.zadd(self._current_state_cache(), cur_timestamp,
                         '{}:{}'.format(curstate_i, cur_timestamp))
 
             # Move on to the next day
