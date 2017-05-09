@@ -407,7 +407,30 @@ def org_rules(org_id):
     # modify an existing rule.
     live_org = LiveOrg(get_redis(), get_org_by_id(org_id))
     if request.method == 'GET':
-        pass
+        # Figure out what rules they want to start with
+        criteria = get_field(request, 'criteria', None)
+        rule_sets = []
+
+        # Adding them in this order means they will be given to the client in
+        #  the same order that they are considered for matching any given day.
+        if criteria.get('single-use', False) is True:
+            rule_sets.extend(live_org.get_single_use_rule_sets())
+        if criteria.get('reoccurring', False) is True:
+            rule_sets.extend(live_org.get_reoccurring_rule_sets())
+
+        # Now filter it based on just one thing currently supported.
+        # FIXME: Support filter by timestamp / date. Right now you can
+        # basically only query specific dates and specific reoccurring
+        # patterns if they exist.
+        in_filter = get_field(request, 'filter', None)
+        if 'pattern' in in_filter:
+            in_pat = in_filter.get('pattern', '')
+            # Only let rule sets through that match the pattern exactly.
+            rule_sets = list(filter(lambda rs: rs.pattern == in_pat, rule_sets))
+
+        return jsonify({
+            'rule_sets': [dict_from_ruleset(rs) for rs in rule_sets]
+        }), 200
     elif request.method == 'PUT':
         pass
     else:
