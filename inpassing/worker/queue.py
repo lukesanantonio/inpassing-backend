@@ -436,6 +436,7 @@ class LiveOrg:
         # We're using a string here because we don't really want a redis list.
         # The states list shouldn't get too big and it's more convenient to just
         # modify it in memory.
+        state_ids = map(lambda x: str(x), state_ids)
         self.r.set(self._daystate_sequence(), ','.join(state_ids))
 
     def get_state_sequence(self):
