@@ -493,15 +493,17 @@ class LiveOrg:
         )
 
     def push_rule_set(self, rule_set: rules.RuleSet):
-        def rule_str(rs, time):
+        def rule_str(rs, timestamp):
             new_rules = rs.rules
             if not isinstance(rs.rules, list):
                 # Make sure we have a list of rules instead of a single value.
                 new_rules = [rs.rules]
-            return msgpack.packb(rs._replace(rules=new_rules, timestamp=time))
+            return msgpack.packb([rs._replace(rules=new_rules), timestamp])
 
         if rules.pattern_reoccurs(rule_set.pattern):
             # Push to the top of the reoccurring rules list
+            # Use the current UTC timestamp because we don't want daylight
+            # savings or other stupid time oddity to cause a duplicate.
             time = int(datetime.now(pytz.utc).timestamp())
             self.r.lpush(
                 self._reoccurring_rule_list(), rule_str(rule_set, time)
@@ -516,9 +518,20 @@ class LiveOrg:
                 self._single_use_rule_bucket(), time, rule_str(rule_set, time)
             )
 
+    def _strip_time_stamp_from_msgpack(self, rule_sets_in):
+        rule_sets = []
+        for item in rule_sets_in:
+            # Strip out the timestamp from all the input rule sets.
+            rule_sets.append(item[0])
+
+        return rule_sets
+
     def get_reoccurring_rule_sets(self, convert=True):
         res = self.r.lrange(self._reoccurring_rule_list(), 0, -1)
-        return rules.convert_rules(res) if convert else res
+
+        return rules.convert_rules(
+            self._strip_time_stamp_from_msgpack(res)
+        ) if convert else res
 
     def get_single_use_rule_sets(self, start_time=None, end_time=None,
                                  convert=True):
@@ -532,7 +545,9 @@ class LiveOrg:
             self._single_use_rule_bucket(), start_time, end_time
         )
 
-        return rules.convert_rules(res) if convert else res
+        return rules.convert_rules(
+            self._strip_time_stamp_from_msgpack(res)
+        ) if convert else res
 
     def get_rule_set(self, date):
         # Find the operative rule set for a particular day.

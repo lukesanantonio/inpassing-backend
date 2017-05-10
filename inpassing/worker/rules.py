@@ -271,7 +271,7 @@ class CompositeMapping:
                 return mapping.adjust_spot_num(state_id, spot_num)
         return None
 
-RuleSet = namedtuple('RuleSet', ['pattern', 'incrday', 'rules', 'timestamp'])
+RuleSet = namedtuple('RuleSet', 'pattern incrday rules')
 
 days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday',
         'sunday']
@@ -294,18 +294,12 @@ def dict_from_ruleset(rs):
         'pattern': rs.pattern,
         'incrday': rs.incrday,
         'rules': [str(rule) for rule in rules],
-        'timestamp': rs.timestamp,
     }
 
 
-def ruleset_from_dict(d, ts=None):
-    d_ts = None
-    if 'timestamp' in d:
-        d_ts = d.timestamp
-
+def ruleset_from_dict(d):
     return RuleSet(
-        d.pattern, d.incrday, [parse_rule(rule) for rule in d.rules],
-        ts or d_ts,
+        d.pattern, d.incrday, [parse_rule(rule) for rule in d.rules]
     )
 
 
@@ -338,18 +332,15 @@ def pattern_reoccurs(day):
     return True if day in days else False
 
 
-def convert_rules(self, res):
+def convert_rules(self, rsets):
     """Converts a list of rule msgpack strings to a list of objects."""
     ret = []
-    for rule_set in res:
-        # Parse object with string rules
-        rs = RuleSet(*msgpack.unpackb(rule_set, encoding='utf-8'))
-
-        # Convert rules to objects
+    for rule_set in rsets:
+        # Convert string rules to objects
         new_rules = []
-        for rule in rs.rules:
+        for rule in rule_set.rules:
             new_rules.append(parse_rule(rule))
 
         # Add the rule set with the fixed rules to the list we will return.
-        ret.append(rs._replace(rules=new_rules))
+        ret.append(rule_set._replace(rules=new_rules))
     return ret
