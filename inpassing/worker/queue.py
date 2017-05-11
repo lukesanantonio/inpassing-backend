@@ -549,6 +549,25 @@ class LiveOrg:
             self._strip_time_stamp_from_msgpack(res)
         ) if convert else res
 
+    def remove_reoccuring_rule_set(self, pattern):
+        reoccurring = self.get_reoccurring_rule_sets(convert=False)
+        indices=[i for i, rs in enumerate(reoccurring) if rs.pattern == pattern]
+        removed = 0
+        for i in indices:
+            # Find the value
+            element = self.r.lindex(indices)
+            # Remove it from the list
+            removed += self.r.lrem(self._reoccurring_rule_list(), 1, element);
+
+        return removed
+
+    def remove_single_use_rule_set(self, date):
+        time = date.timestamp()
+        return self.r.zremrangebyscore(
+            self._single_use_rule_bucket(), time, time
+        )
+
+
     def get_rule_set(self, date):
         # Find the operative rule set for a particular day.
         start_time = date.timestamp()
