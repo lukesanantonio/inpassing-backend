@@ -6,7 +6,8 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from pytz import all_timezones
 
-from inpassing.worker.rules import dict_from_ruleset
+from inpassing.worker.rules import dict_from_ruleset, ruleset_from_dict, \
+    pattern_reoccurs
 from .. import util, exceptions as ex
 from ..models import db, Org, User, Daystate
 from ..util import jwt_optional, get_redis
@@ -432,10 +433,36 @@ def org_rules(org_id):
         return jsonify({
             'rule_sets': [dict_from_ruleset(rs) for rs in rule_sets]
         }), 200
-    elif request.method == 'PUT':
-        pass
     else:
-        pass
+        rs = ruleset_from_dict(get_field('rule_set'))
+        if request.method == 'POST':
+            # Add a new rule set, but throw an error if we would be overriding one
+            # that already exists.
+            test_rulesets = []
+            if pattern_reoccurs(rs.pattern):
+                test_rulesets.extend(live_org.get_reoccurring_rule_sets())
+            else:
+                test_rulesets.extend(live_org.get_single_use_rule_sets())
+
+            # Search by pattern only. There should never be an issue where two
+            # patterns represent the same date, because there is only one way to
+            # represent any particular day.
+            for test_rs in test_rulesets:
+                if test_rs.pattern == rs.pattern:
+                    raise ex.RuleSetExists(org_id, rs)
+
+            # Add the rule set, there are no duplicates.
+            live_org.push_rule_set(rs)
+            return 200
+        else:
+            # Add a new rule set, replacing one that is already there.
+            if pattern_reoccurs(rs.pattern):
+                # Remove a reoccurring rule if it already exists.
+                live_org.remove_reoccuring_rule_set(rs.pattern)
+
+            # This is done automatically for single-use rule sets
+            live_org.push_rule_set(rs)
+            return 200
 
 
 @org_api.route('/<org_id>/rules/current')
