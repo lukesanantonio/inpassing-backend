@@ -510,8 +510,7 @@ class LiveOrg:
             )
 
         else:
-            # Add the one-day pattern to the current bucket, using its date as
-            # the timestamp
+            # Add the one-day pattern to the set sorting by timestmap.
             time = int(str_to_date(rule_set.pattern, self.timezone).timestamp())
             # Add the timestamp to the rule set and add it to the sorted set.
             self.r.zadd(
