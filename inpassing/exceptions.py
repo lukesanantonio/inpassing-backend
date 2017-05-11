@@ -85,3 +85,23 @@ class Forbidden(InPassingException):
 
     def get_msg(self):
         return self.msg
+
+
+class RuleSetExists(InPassingException):
+    code = 422
+    err = 'rule_set_exists'
+
+    def __init__(self, org_id, rs):
+        self.org_id = org_id
+        self.rs = rs
+
+    def get_msg(self):
+        return 'rule for {} already exists in org {}'.format(
+            self.rs.pattern, self.org_id
+        )
+
+
+class NotImplemented(InPassingException):
+    code = 422
+    err = 'not_implemented'
+    msg = 'This function is not yet implemented'
