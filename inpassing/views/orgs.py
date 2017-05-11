@@ -401,7 +401,7 @@ def org_daystates_current(org_id):
     ).first()
     return jsonify(util.daystate_dict(daystate)), 200
 
-@org_api.route('/<org_id>/rules', methods=['GET', 'PUT', 'POST'])
+@org_api.route('/<org_id>/rules', methods=['GET', 'PUT', 'POST', 'DELETE'])
 def org_rules(org_id):
     # When the client uses GET we want to query rules only, when they use
     # POST we only want to add rules, throwing an error if a rule already
@@ -433,6 +433,8 @@ def org_rules(org_id):
         return jsonify({
             'rule_sets': [dict_from_ruleset(rs) for rs in rule_sets]
         }), 200
+    elif request.method == 'DELETE':
+        raise ex.NotImplemented()
     else:
         rs = ruleset_from_dict(get_field('rule_set'))
         if request.method == 'POST':
