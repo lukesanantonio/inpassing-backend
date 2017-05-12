@@ -12,7 +12,8 @@ from .. import util, exceptions as ex
 from ..models import db, Org, User, Daystate
 from ..util import jwt_optional, get_redis
 from ..view_util import user_is_mod, user_is_participant, get_field, \
-    get_org_by_id, get_user_by_id, daystate_exists
+    get_org_by_id, get_user_by_id, daystate_exists, verify_user_is_mod, \
+    verify_user_is_participant_or_mod
 from ..worker import LiveOrg
 
 org_api = Blueprint('org', __name__)
@@ -187,13 +188,7 @@ def org_moderators(org_id):
 
     client_user_id = get_jwt_identity()
     if request.method == 'POST':
-        # The client must be a mod
-        if not user_is_mod(client_user_id, org_id):
-            raise ex.Forbidden(
-                'user {} must moderate org {}'.format(
-                    client_user_id, org_id
-                )
-            )
+        verify_user_is_mod(client_user_id, org_id)
 
         js = request.get_json()
 
@@ -233,13 +228,8 @@ def org_moderators(org_id):
 def org_moderators_query(org_id, user_id):
     org = get_org_by_id(org_id)
 
-    # Does our client moderate the org?
-    client_user_id = get_jwt_identity()
-    if not user_is_mod(client_user_id, org_id):
-        # Get outta here
-        raise ex.Forbidden(
-            'user {} must moderate org {}'.format(client_user_id, org_id)
-        )
+    # Does our auth'd client moderate this org?
+    verify_user_is_mod(get_jwt_identity(), org_id)
 
     # Does the given user moderate?
     user = User.query.filter_by(id=user_id).first()
@@ -268,11 +258,7 @@ def org_daystates(org_id):
 
     user_id = get_jwt_identity()
     if request.method == 'POST':
-        # The user must be a mod
-        if not user_is_mod(user_id, org_id):
-            raise ex.Forbidden(
-                'user {} must mod org {}'.format(user_id, org_id)
-            )
+        verify_user_is_mod(user_id, org_id)
 
         # Post a new day state
         daystate = Daystate(org_id=org_id,
@@ -287,13 +273,7 @@ def org_daystates(org_id):
                                 daystate_id=daystate.id)
         }))
     else:
-        # The user must be a participant or mod.
-        if not (user_is_mod(user_id, org_id) or
-                    user_is_participant(user_id, org_id)):
-            raise ex.Forbidden(
-                'user {} not allowed to query daystates for org {}'
-                .format(user_id, org_id)
-            )
+        verify_user_is_participant_or_mod(user_id, org_id)
 
         # Query org day states by org id
         daystates = Daystate.query.filter_by(org_id=org_id).all()
@@ -309,6 +289,8 @@ def org_daystates(org_id):
 
 @org_api.route('/<org_id>/daystate_sequence', methods=['GET', 'POST'])
 def org_daystate_sequence(org_id):
+    verify_user_is_participant_or_mod(get_jwt_identity(), org_id)
+
     # Construct a live org
     live_org = LiveOrg(get_redis(), get_org_by_id(org_id))
     if request.method == 'POST':
@@ -345,10 +327,7 @@ def org_daystates_query(org_id, daystate_id):
     if request.method == 'PUT':
 
         # Make sure the user is mod
-        if not user_is_mod(user_id, org_id):
-            raise ex.Forbidden(
-                'user {} must moderate org {}'.format(user_id, org_id)
-            )
+        verify_user_is_mod(user_id, org_id)
 
         js = request.get_json()
         new_identifier = js.get('identifier')
@@ -365,13 +344,7 @@ def org_daystates_query(org_id, daystate_id):
         # If the user is trying to get info about this day state they must be a
         # participant.
 
-        if not (user_is_participant(user_id, org_id) or
-                    user_is_mod(user_id, org_id)):
-            raise ex.Forbidden(
-                'user {} must mod or participate in org {}'.format(
-                    user_id, org_id
-                )
-            )
+        verify_user_is_participant_or_mod(user_id, org_id)
 
     # If they made it this far they are allowed to see the day state.
     return jsonify(util.daystate_dict(daystate)), 200
@@ -380,14 +353,7 @@ def org_daystates_query(org_id, daystate_id):
 @org_api.route('/<org_id>/daystates/current')
 @jwt_required
 def org_daystates_current(org_id):
-    user_id = get_jwt_identity()
-    if not (user_is_participant(user_id, org_id) or
-                user_is_mod(user_id, org_id)):
-        raise ex.Forbidden(
-            'user {} must mod or participate in org {}'.format(
-                user_id, org_id
-            )
-        )
+    verify_user_is_participant_or_mod(get_jwt_identity(), org_id)
 
     live_org = LiveOrg(get_redis(), get_org_by_id(org_id))
 
@@ -409,6 +375,9 @@ def org_rules(org_id):
     # modify an existing rule.
     live_org = LiveOrg(get_redis(), get_org_by_id(org_id))
     if request.method == 'GET':
+        # Check permissions
+        verify_user_is_participant_or_mod(get_jwt_identity(), org_id)
+
         # Figure out what rules they want to start with
         criteria = get_field(request, 'criteria', None)
         rule_sets = []
@@ -434,6 +403,8 @@ def org_rules(org_id):
             'rule_sets': [dict_from_ruleset(rs) for rs in rule_sets]
         }), 200
     elif request.method == 'DELETE':
+        verify_user_is_mod(get_jwt_identity(), org_id)
+
         # Remove a rule by pattern
         pattern = get_field(request, 'pattern')
         num_deleted = live_org.remove_rule_set(pattern)
@@ -441,6 +412,7 @@ def org_rules(org_id):
             'num_deleted': num_deleted
         }), 200
     else:
+        verify_user_is_mod(get_jwt_identity(), org_id)
         rs = ruleset_from_dict(get_field(request, 'rule_set'))
         if request.method == 'POST':
             # Add a new rule set, but throw an error if we would be overriding one
@@ -475,14 +447,7 @@ def org_rules(org_id):
 @org_api.route('/<org_id>/rules/current')
 @jwt_required
 def org_rules_current(org_id):
-    user_id = get_jwt_identity()
-    if not (user_is_participant(user_id, org_id) or
-                user_is_mod(user_id, org_id)):
-        raise ex.Forbidden(
-            'user {} must mod or participate in org {}'.format(
-                user_id, org_id
-            )
-        )
+    verify_user_is_participant_or_mod(get_jwt_identity(), org_id)
 
     live_org = LiveOrg(get_redis(), get_org_by_id(org_id))
 

@@ -47,3 +47,22 @@ def daystate_exists(daystate_id, org_id):
     query = Daystate.query.filter_by(id=daystate_id, org_id=org_id)
     (ret,) = db.session.query(query.exists()).first()
     return ret
+
+
+def verify_user_is_participant_or_mod(user_id, org_id):
+    if not (user_is_participant(user_id, org_id) or
+                user_is_mod(user_id, org_id)):
+        raise ex.Forbidden(
+            'user {} must mod or participate in org {}'.format(
+                user_id, org_id
+            )
+        )
+
+
+def verify_user_is_mod(user_id, org_id):
+    if not user_is_mod(user_id, org_id):
+        raise ex.Forbidden(
+            'user {} must be a moderator of org {}'.format(
+                user_id, org_id
+            )
+        )
