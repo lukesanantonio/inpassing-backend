@@ -568,6 +568,11 @@ class LiveOrg:
             self._single_use_rule_bucket(), time, time
         )
 
+    def remove_rule_set(self, pattern):
+        if rules.pattern_reoccurs(pattern):
+            self.remove_reoccuring_rule_set(pattern)
+        else:
+            self.remove_single_use_rule_set(pattern)
 
     def get_rule_set(self, date):
         # Find the operative rule set for a particular day.

@@ -434,7 +434,12 @@ def org_rules(org_id):
             'rule_sets': [dict_from_ruleset(rs) for rs in rule_sets]
         }), 200
     elif request.method == 'DELETE':
-        raise ex.NotImplemented()
+        # Remove a rule by pattern
+        pattern = get_field(request, 'pattern')
+        num_deleted = live_org.remove_rule_set(pattern)
+        return jsonify({
+            'num_deleted': num_deleted
+        }), 200
     else:
         rs = ruleset_from_dict(get_field('rule_set'))
         if request.method == 'POST':
