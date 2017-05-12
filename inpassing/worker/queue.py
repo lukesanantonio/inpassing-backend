@@ -561,6 +561,8 @@ class LiveOrg:
         return removed
 
     def remove_single_use_rule_set(self, date):
+        if isinstance(date, str):
+            date = str_to_date(date)
         time = date.timestamp()
         return self.r.zremrangebyscore(
             self._single_use_rule_bucket(), time, time
