@@ -441,7 +441,7 @@ def org_rules(org_id):
             'num_deleted': num_deleted
         }), 200
     else:
-        rs = ruleset_from_dict(get_field('rule_set'))
+        rs = ruleset_from_dict(get_field(request, 'rule_set'))
         if request.method == 'POST':
             # Add a new rule set, but throw an error if we would be overriding one
             # that already exists.
