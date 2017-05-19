@@ -360,10 +360,15 @@ Query a rule set or many rule sets.
     + Body
 
         + Attributes
-            + reoccurring (boolean, optional)
-            + pattern (string, optional)
+            + criteria (object, optional)
+              + single-use - Whether or not single-use rule sets should be
+              considered.
+              + reoccurring - Whether reoccurring rules should be considered.
+            + filter (object, optional)
+              + pattern - The pattern to query against considered rules.
 
-### Adjust Org rule [PUT /orgs/{org_id}/rule]
+
+### Adjust Org rule [PUT /orgs/{org_id}/rules]
 
 + Request
 
