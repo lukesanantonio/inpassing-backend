@@ -75,10 +75,9 @@ def init_test_data():
         FixedDaystate(datetime.datetime(2017, 4, 18), a_day.id)
     )
 
-    ts_now = datetime.datetime.now(datetime.timezone.utc).timestamp()
-    live_org.push_rule_set(RuleSet('*', True, 'cur', ts_now))
-    live_org.push_rule_set(RuleSet('sunday', False, 'none', ts_now))
-    live_org.push_rule_set(RuleSet('saturday', False, 'none', ts_now))
+    live_org.push_rule_set(RuleSet('*', True, 'cur'))
+    live_org.push_rule_set(RuleSet('sunday', False, 'none'))
+    live_org.push_rule_set(RuleSet('saturday', False, 'none'))
 
 
 def parse_field(prompt_fmt, cur_value):
