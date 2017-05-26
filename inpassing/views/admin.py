@@ -3,7 +3,9 @@
 
 import bcrypt
 from flask import Blueprint, render_template, request, redirect, url_for
-from flask_login import LoginManager, login_user, login_required, logout_user
+from flask_login import LoginManager, login_user, login_required, \
+    logout_user, current_user
+
 from ..models import db, User
 from ..forms import LoginForm, SignupForm
 from ..util import get_redirect_target
@@ -20,6 +22,8 @@ def load_user(user_id):
 
 @admin_www.route('/')
 def index():
+    if current_user.is_authenticated:
+        return redirect(url_for('.user_home'))
     return render_template('index.html')
 
 
