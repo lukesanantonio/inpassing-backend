@@ -41,14 +41,14 @@ def org_view(org_id):
     return render_template('org.html', org=org)
 
 @admin_www.route('/logout', methods=['GET', 'POST'])
-def logout():
+def user_logout():
     logout_user()
     redirect_url = get_redirect_target()
     return redirect(redirect_url or url_for('.index'))
 
 
 @admin_www.route('/login', methods=['GET', 'POST'])
-def login():
+def user_login():
     form = LoginForm()
     if form.validate_on_submit():
         # Form is validated, try to log in
@@ -64,7 +64,7 @@ def login():
 
 
 @admin_www.route('/signup', methods=['GET', 'POST'])
-def signup():
+def user_signup():
     form = SignupForm()
     if form.validate_on_submit():
         # TODO: Use a captcha
