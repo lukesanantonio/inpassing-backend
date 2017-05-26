@@ -6,6 +6,7 @@ from flask import Blueprint, render_template, request, redirect, url_for
 from flask_login import LoginManager, login_user, login_required, \
     logout_user, current_user
 
+from inpassing.view_util import get_org_by_id
 from ..models import db, User
 from ..forms import LoginForm, SignupForm
 from ..util import get_redirect_target
@@ -32,6 +33,12 @@ def index():
 def user_home():
     return render_template('home.html')
 
+
+@admin_www.route('/orgs/<org_id>')
+@login_required
+def org_view(org_id):
+    org = get_org_by_id(org_id)
+    return render_template('org.html', org=org)
 
 @admin_www.route('/logout', methods=['GET', 'POST'])
 def logout():
