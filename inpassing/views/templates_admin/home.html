@@ -2,4 +2,16 @@
 {% block title %}Home{% endblock %}
 {% block body %}
 Hello, {{ current_user.first_name }}
+<h2>Moderating in orgs:</h2>
+<ul>
+{% for org in current_user.moderates %}
+    <li><a href="/orgs/{{ org.id }}">{{ org.name }}</a></li>
+{% endfor %}
+</ul>
+<h2>Participating in orgs</h2>
+<ul>
+{% for org in current_user.participates %}
+    <li><a href="/orgs/{{ org.id }}">{{ org.name }}</a></li>
+{% endfor %}
+</ul>
 {% endblock %}
