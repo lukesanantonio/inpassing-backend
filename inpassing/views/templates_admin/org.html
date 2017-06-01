@@ -2,4 +2,10 @@
 {% block title %}{{ org.name }}{% endblock %}
 {% block body %}
 {{org.id}} - {{org.name}}
+{% if org in current_user.moderates %}
+<h2>Unverified Passes:</h2>
+{% for pass in non_verified_passes %}
+<div class="non-verified-pass">{{pass.id}}</div>
+{% endfor %}
+{% endif %}
 {% endblock %}

@@ -38,7 +38,11 @@ def user_home():
 @login_required
 def org_view(org_id):
     org = get_org_by_id(org_id)
-    return render_template('org.html', org=org)
+    return render_template(
+        'org.html',
+        org=org,
+        non_verified_passes=[p for p in org.passes if p.assigned_time is None]
+    )
 
 @admin_www.route('/logout', methods=['GET', 'POST'])
 def user_logout():
